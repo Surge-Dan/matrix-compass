@@ -1,11 +1,6 @@
+import { DashboardApp } from "../components/dashboard/dashboard-app";
+import { getDashboardData } from "../lib/dashboard-data";
+
 export default function Home() {
-  return (
-    <main className="site-shell">
-      <iframe
-        className="site-frame"
-        src="/matrix-compass.html"
-        title="矩阵罗盘自媒体运营监控平台"
-      />
-    </main>
-  );
+  return <DashboardApp initialData={getDashboardData(30, "mc-initial-render")} />;
 }
