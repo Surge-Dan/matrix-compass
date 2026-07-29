@@ -1,0 +1,916 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>矩阵罗盘｜自媒体运营监控平台</title>
+  <style>
+    :root {
+      --paper: #f4f1eb;
+      --surface: #fbfaf7;
+      --surface-2: #efebe3;
+      --ink: #25231f;
+      --muted: #777168;
+      --line: #ddd7cd;
+      --accent: #c65f3b;
+      --accent-soft: #f2ded4;
+      --green: #667f69;
+      --green-soft: #dfe8df;
+      --gold: #a48343;
+      --red: #ae4d43;
+      --shadow: 0 16px 42px rgba(45, 40, 33, .06);
+      --sidebar: 224px;
+    }
+    * { box-sizing: border-box; }
+    html { background: var(--paper); }
+    body {
+      margin: 0;
+      min-width: 1024px;
+      min-height: 100vh;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 85% -10%, rgba(198,95,59,.09), transparent 28%),
+        var(--paper);
+      font-family: Inter, "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+    button, input, select { font: inherit; }
+    button { cursor: pointer; }
+    .app { min-height: 100vh; }
+    .sidebar {
+      position: fixed;
+      inset: 0 auto 0 0;
+      width: var(--sidebar);
+      padding: 28px 18px 20px;
+      background: #2a2925;
+      color: #f8f4ed;
+      display: flex;
+      flex-direction: column;
+      z-index: 20;
+    }
+    .brand {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      padding: 0 10px 30px;
+    }
+    .brand-mark {
+      width: 38px;
+      height: 38px;
+      border-radius: 12px 12px 12px 3px;
+      display: grid;
+      place-items: center;
+      background: var(--accent);
+      color: #fffaf3;
+      font-family: Georgia, serif;
+      font-size: 22px;
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,.16);
+    }
+    .brand strong {
+      display: block;
+      font-size: 16px;
+      letter-spacing: .12em;
+    }
+    .brand small { color: #a9a59e; font-size: 10px; letter-spacing: .1em; }
+    .nav-label {
+      padding: 0 11px 8px;
+      color: #85817b;
+      font-size: 10px;
+      letter-spacing: .16em;
+    }
+    .nav { display: grid; gap: 4px; }
+    .nav button {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      gap: 11px;
+      padding: 11px 12px;
+      border: 0;
+      border-radius: 10px;
+      color: #bbb7b0;
+      background: transparent;
+      text-align: left;
+      transition: .2s ease;
+    }
+    .nav button:hover, .nav button.active {
+      background: rgba(255,255,255,.085);
+      color: white;
+    }
+    .nav button.active::after {
+      content: "";
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      margin-left: auto;
+      background: #e07852;
+    }
+    .nav .icon {
+      width: 20px;
+      font-size: 16px;
+      text-align: center;
+      opacity: .9;
+    }
+    .sidebar-foot {
+      margin-top: auto;
+      padding: 16px 10px 0;
+      border-top: 1px solid rgba(255,255,255,.08);
+    }
+    .sync-state { display:flex; align-items:center; gap:8px; font-size:11px; color:#aaa69f; }
+    .pulse { width:7px; height:7px; border-radius:50%; background:#87a58a; box-shadow:0 0 0 4px rgba(135,165,138,.12); }
+    .main { margin-left: var(--sidebar); min-height:100vh; }
+    .topbar {
+      height: 74px;
+      padding: 0 34px;
+      border-bottom: 1px solid rgba(73,65,53,.10);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: rgba(244,241,235,.82);
+      backdrop-filter: blur(18px);
+      position: sticky;
+      top: 0;
+      z-index: 15;
+    }
+    .crumb { display:flex; align-items:center; gap:8px; color:var(--muted); font-size:12px; }
+    .crumb b { color:var(--ink); font-weight:600; }
+    .top-actions { display:flex; align-items:center; gap:10px; }
+    .date-chip, .icon-btn {
+      height: 36px;
+      border: 1px solid var(--line);
+      background: rgba(251,250,247,.75);
+      color: var(--ink);
+      border-radius: 10px;
+    }
+    .date-chip { padding:0 13px; display:flex; align-items:center; gap:9px; font-size:12px; }
+    .icon-btn { width:36px; position:relative; }
+    .icon-btn .dot { position:absolute; right:8px; top:7px; width:5px; height:5px; border-radius:50%; background:var(--accent); }
+    .avatar { width:36px; height:36px; border-radius:50%; background:#d4c7b4; display:grid; place-items:center; font-size:12px; font-weight:700; }
+    .content { padding: 30px 34px 48px; max-width: 1550px; margin:auto; }
+    .page { display:none; }
+    .page.active { display:block; animation: rise .28s ease; }
+    @keyframes rise { from{opacity:0; transform:translateY(5px)} to{opacity:1; transform:none} }
+    .hero { display:flex; justify-content:space-between; align-items:flex-end; gap:24px; margin-bottom:24px; }
+    .eyebrow { color:var(--accent); font-family:Georgia,serif; font-style:italic; font-size:13px; margin-bottom:8px; }
+    h1 { margin:0; font-family:Georgia, "Songti SC", serif; font-weight:500; font-size:32px; letter-spacing:-.02em; }
+    .hero p { margin:8px 0 0; color:var(--muted); font-size:13px; }
+    .segmented { padding:4px; border:1px solid var(--line); border-radius:12px; background:rgba(251,250,247,.7); display:flex; gap:2px; }
+    .segmented button { border:0; background:transparent; border-radius:8px; padding:7px 11px; color:var(--muted); font-size:11px; }
+    .segmented button.active { color:var(--ink); background:#fff; box-shadow:0 2px 9px rgba(45,40,33,.09); }
+    .notice {
+      margin-bottom: 16px;
+      padding: 13px 16px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      border: 1px solid #ead3c7;
+      border-radius: 14px;
+      background: #f8e9e1;
+      font-size: 12px;
+    }
+    .notice strong { margin-right:4px; }
+    .notice a { margin-left:auto; color:var(--accent); text-decoration:none; }
+    .metrics { display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-bottom:14px; }
+    .card {
+      background:rgba(251,250,247,.86);
+      border:1px solid rgba(104,94,80,.15);
+      border-radius:16px;
+      box-shadow:var(--shadow);
+    }
+    .metric { padding:18px 18px 16px; min-height:132px; position:relative; overflow:hidden; }
+    .metric::before { content:""; position:absolute; width:70px; height:70px; border-radius:50%; right:-22px; top:-28px; background:var(--tint,#eee8df); opacity:.7; }
+    .metric .label { color:var(--muted); font-size:11px; display:flex; justify-content:space-between; }
+    .metric .value { margin-top:15px; font-family:Georgia,serif; font-size:29px; letter-spacing:-.03em; }
+    .delta { margin-top:11px; color:var(--green); font-size:11px; }
+    .delta.down { color:var(--red); }
+    .dashboard-grid { display:grid; grid-template-columns:minmax(0,1.65fr) minmax(280px,.85fr); gap:14px; }
+    .panel { padding:20px; min-height:310px; }
+    .panel-head { display:flex; align-items:flex-start; justify-content:space-between; gap:14px; margin-bottom:18px; }
+    .panel-title { font-size:14px; font-weight:650; }
+    .panel-sub { color:var(--muted); font-size:10px; margin-top:4px; }
+    .legend { display:flex; gap:14px; color:var(--muted); font-size:10px; }
+    .legend span::before { content:""; display:inline-block; width:7px; height:7px; border-radius:50%; background:var(--c); margin-right:5px; }
+    .chart { position:relative; height:204px; border-bottom:1px solid var(--line); }
+    .chart-grid { position:absolute; inset:0; display:grid; grid-template-rows:repeat(4,1fr); }
+    .chart-grid i { border-top:1px dashed rgba(83,75,63,.11); }
+    .chart svg { position:absolute; inset:0; width:100%; height:100%; overflow:visible; }
+    .axis { display:flex; justify-content:space-between; color:#9a948b; font-size:9px; margin-top:9px; }
+    .platform-list { display:grid; gap:19px; margin-top:10px; }
+    .platform-row { display:grid; grid-template-columns:33px 1fr auto; align-items:center; gap:11px; }
+    .platform-logo { width:33px; height:33px; border-radius:10px; display:grid; place-items:center; color:white; font-weight:800; font-size:11px; }
+    .dy { background:#252525; } .xhs { background:#d85e54; } .wx { background:#6e9472; }
+    .bar-label { display:flex; justify-content:space-between; font-size:11px; margin-bottom:7px; }
+    .bar { height:6px; border-radius:9px; background:#e9e4db; overflow:hidden; }
+    .bar i { display:block; height:100%; border-radius:inherit; background:var(--bar); }
+    .platform-row b { font:500 15px Georgia,serif; }
+    .table-card { margin-top:14px; padding:0; overflow:hidden; }
+    .table-head { padding:18px 20px; display:flex; align-items:center; justify-content:space-between; border-bottom:1px solid var(--line); }
+    .text-button { border:0; background:none; color:var(--accent); font-size:11px; }
+    table { width:100%; border-collapse:collapse; }
+    th { padding:12px 16px; color:var(--muted); font-size:10px; font-weight:550; text-align:left; background:#f5f2ec; }
+    td { padding:14px 16px; border-top:1px solid #e6e1d8; font-size:11px; vertical-align:middle; }
+    .work { display:flex; align-items:center; gap:11px; min-width:270px; }
+    .thumb { width:46px; height:34px; border-radius:8px; display:grid; place-items:center; color:#fff; font-size:14px; background:linear-gradient(135deg,#756d60,#b18a68); }
+    .work-title { max-width:250px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .work small { display:block; color:var(--muted); margin-top:3px; }
+    .pill { display:inline-flex; align-items:center; gap:5px; padding:5px 8px; border-radius:20px; font-size:9px; background:var(--surface-2); color:var(--muted); }
+    .pill.hot { background:var(--accent-soft); color:#954125; }
+    .toolbar {
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:14px;
+      margin-bottom:14px;
+    }
+    .toolbar-left, .toolbar-right { display:flex; align-items:center; gap:9px; }
+    .control {
+      min-height:38px;
+      border:1px solid var(--line);
+      border-radius:10px;
+      background:rgba(251,250,247,.88);
+      color:var(--ink);
+      padding:0 12px;
+      font-size:11px;
+      outline:none;
+    }
+    .control:focus { border-color:#b8a899; box-shadow:0 0 0 3px rgba(198,95,59,.08); }
+    .search { width:240px; }
+    .btn {
+      min-height:38px;
+      border:1px solid var(--line);
+      border-radius:10px;
+      background:#fff;
+      color:var(--ink);
+      padding:0 14px;
+      font-size:11px;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      gap:7px;
+    }
+    .btn:hover { border-color:#bcb2a5; }
+    .btn.primary { color:#fff; background:#302e29; border-color:#302e29; }
+    .btn.accent { color:#fff; background:var(--accent); border-color:var(--accent); }
+    .btn.ghost { background:transparent; }
+    .btn.danger { color:var(--red); }
+    .section-grid { display:grid; gap:14px; }
+    .account-grid { grid-template-columns:repeat(3,1fr); }
+    .account-card { padding:18px; position:relative; }
+    .account-top { display:flex; align-items:center; gap:12px; }
+    .account-logo { width:42px; height:42px; border-radius:13px; display:grid; place-items:center; color:#fff; font-weight:800; }
+    .account-name { font-size:13px; font-weight:650; }
+    .account-id { color:var(--muted); font-size:9px; margin-top:4px; }
+    .status { margin-left:auto; padding:5px 8px; border-radius:20px; background:var(--green-soft); color:#4f6b53; font-size:9px; }
+    .status.warn { background:#f1e5cc; color:#8f6a26; }
+    .status.off { background:#eee8e4; color:#9b5c54; }
+    .account-kpis { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-top:18px; padding-top:15px; border-top:1px solid var(--line); }
+    .account-kpis span { display:block; color:var(--muted); font-size:9px; }
+    .account-kpis b { display:block; margin-top:5px; font:500 15px Georgia,serif; }
+    .account-foot { display:flex; justify-content:space-between; align-items:center; margin-top:14px; color:var(--muted); font-size:9px; }
+    .account-foot button { border:0; background:none; color:var(--accent); font-size:10px; }
+    .mini-metrics { display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin-bottom:14px; }
+    .mini { padding:17px 18px; }
+    .mini span { color:var(--muted); font-size:10px; }
+    .mini b { display:block; margin-top:10px; font:500 23px Georgia,serif; }
+    .content-table tbody tr:hover { background:#faf7f2; }
+    .sortable { cursor:pointer; user-select:none; }
+    .sortable:hover { color:var(--accent); }
+    .pagination { padding:13px 16px; border-top:1px solid var(--line); display:flex; align-items:center; justify-content:space-between; color:var(--muted); font-size:10px; }
+    .pagination button { width:28px; height:28px; border:1px solid var(--line); background:#fff; border-radius:8px; }
+    .pagination button:disabled { opacity:.35; cursor:not-allowed; }
+    .empty { display:none; padding:50px 20px; text-align:center; color:var(--muted); font-size:12px; }
+    .analysis-grid { display:grid; grid-template-columns:1.35fr .85fr; gap:14px; }
+    .stacked {
+      height:16px;
+      border-radius:20px;
+      overflow:hidden;
+      display:flex;
+      background:var(--surface-2);
+      margin:24px 0 12px;
+    }
+    .stacked i { height:100%; }
+    .split-legend { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-top:18px; }
+    .split-legend div { padding:12px; border:1px solid var(--line); border-radius:12px; }
+    .split-legend span { color:var(--muted); font-size:9px; }
+    .split-legend b { display:block; margin-top:5px; font:500 16px Georgia,serif; }
+    .rank-list { display:grid; gap:14px; }
+    .rank-item { display:grid; grid-template-columns:24px minmax(90px,1fr) 2fr auto; align-items:center; gap:10px; font-size:10px; }
+    .rank-num { color:#9c958b; font:italic 13px Georgia,serif; }
+    .rank-bar { height:7px; background:#ebe6de; border-radius:9px; overflow:hidden; }
+    .rank-bar i { display:block; height:100%; border-radius:inherit; background:linear-gradient(90deg,#c65f3b,#d9a084); }
+    .donut-wrap { display:flex; align-items:center; justify-content:center; gap:28px; height:215px; }
+    .donut {
+      width:142px;
+      height:142px;
+      border-radius:50%;
+      background:conic-gradient(#c65f3b 0 42%,#738574 42% 69%,#b69a64 69% 88%,#d9d1c5 88%);
+      position:relative;
+    }
+    .donut::after { content:"互动构成"; position:absolute; inset:26px; border-radius:50%; background:var(--surface); display:grid; place-items:center; color:var(--muted); font-size:10px; }
+    .legend-vertical { display:grid; gap:11px; font-size:10px; }
+    .legend-vertical span::before { content:""; display:inline-block; width:8px; height:8px; border-radius:3px; background:var(--c); margin-right:7px; }
+    .keyword-cloud { display:flex; flex-wrap:wrap; gap:9px; align-content:center; padding:16px 0; }
+    .keyword-cloud span { padding:7px 10px; border:1px solid var(--line); border-radius:20px; color:var(--muted); font-size:calc(9px + var(--s)); background:#fff; }
+    .ai-card { padding:20px; background:#2f2d28; color:#f8f4ed; }
+    .ai-card .panel-sub { color:#a8a49c; }
+    .ai-tag { display:inline-flex; padding:5px 8px; border:1px solid rgba(255,255,255,.15); border-radius:20px; color:#d5c4b7; font-size:9px; margin-bottom:16px; }
+    .ai-card ul { padding-left:16px; margin:13px 0 0; color:#cbc7c0; font-size:11px; line-height:1.8; }
+    .alert-list { display:grid; gap:10px; }
+    .alert-item { padding:17px 18px; display:grid; grid-template-columns:10px minmax(220px,1.4fr) 1fr auto; gap:16px; align-items:center; }
+    .severity { width:8px; height:8px; border-radius:50%; background:var(--red); box-shadow:0 0 0 5px rgba(174,77,67,.08); }
+    .severity.medium { background:var(--gold); box-shadow:0 0 0 5px rgba(164,131,67,.09); }
+    .severity.info { background:var(--green); box-shadow:0 0 0 5px rgba(102,127,105,.09); }
+    .alert-title { font-size:12px; font-weight:650; }
+    .alert-desc, .alert-meta { color:var(--muted); font-size:10px; line-height:1.5; }
+    .alert-actions { display:flex; gap:7px; }
+    .handled { opacity:.54; }
+    .handled .alert-title { text-decoration:line-through; }
+    .security-banner { padding:18px 20px; border-radius:15px; background:#e7e7dc; border:1px solid #d5d5c6; margin-bottom:14px; display:flex; gap:13px; align-items:flex-start; }
+    .security-banner b { display:block; font-size:12px; margin-bottom:5px; }
+    .security-banner p { margin:0; color:#66675f; font-size:10px; line-height:1.6; }
+    .api-grid { grid-template-columns:repeat(3,1fr); }
+    .api-card { padding:18px; }
+    .api-card-head { display:flex; align-items:center; gap:10px; }
+    .api-card h3 { margin:0; font-size:12px; }
+    .api-meta { display:grid; gap:8px; margin:17px 0; }
+    .api-meta div { display:flex; justify-content:space-between; color:var(--muted); font-size:9px; }
+    .api-meta b { color:var(--ink); font-weight:550; }
+    .api-result { min-height:38px; border-radius:9px; background:var(--surface-2); padding:10px; color:var(--muted); font-size:9px; line-height:1.6; }
+    .api-result.success { background:var(--green-soft); color:#4f6b53; }
+    .api-result.error { background:#f2dfdb; color:#944b42; }
+    .api-result.loading { background:#eee8dc; color:#806f52; }
+    .contract { margin-top:14px; padding:20px; }
+    pre { margin:14px 0 0; padding:15px; border-radius:12px; background:#2b2a27; color:#d9d3ca; font:10px/1.65 ui-monospace,SFMono-Regular,Consolas,monospace; overflow:auto; }
+    .drawer, .modal {
+      position:fixed;
+      inset:0;
+      z-index:50;
+      pointer-events:none;
+      opacity:0;
+      transition:.2s ease;
+    }
+    .drawer.open, .modal.open { opacity:1; pointer-events:auto; }
+    .scrim { position:absolute; inset:0; background:rgba(37,35,31,.32); backdrop-filter:blur(2px); }
+    .drawer-panel { position:absolute; top:0; right:0; width:470px; height:100%; background:var(--surface); padding:26px; overflow:auto; transform:translateX(100%); transition:.28s ease; box-shadow:-20px 0 55px rgba(45,40,33,.12); }
+    .drawer.open .drawer-panel { transform:none; }
+    .close { width:34px; height:34px; border:1px solid var(--line); border-radius:10px; background:#fff; float:right; }
+    .detail-hero { margin:45px 0 22px; padding:22px; border-radius:16px; background:linear-gradient(135deg,#e6d5c6,#c89171); color:#302d28; }
+    .detail-hero h2 { margin:0 0 8px; font:500 22px Georgia,serif; }
+    .detail-kpis { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; }
+    .detail-kpis div { padding:12px; border:1px solid var(--line); border-radius:11px; }
+    .detail-kpis span { color:var(--muted); font-size:9px; }
+    .detail-kpis b { display:block; margin-top:5px; font:500 15px Georgia,serif; }
+    .modal-card { position:absolute; top:50%; left:50%; width:430px; transform:translate(-50%,-46%); background:var(--surface); border-radius:18px; padding:24px; box-shadow:0 24px 80px rgba(35,31,27,.22); transition:.25s ease; }
+    .modal.open .modal-card { transform:translate(-50%,-50%); }
+    .modal-card h2 { margin:0; font:500 24px Georgia,serif; }
+    .modal-card p { color:var(--muted); font-size:10px; line-height:1.6; }
+    .field { margin-top:14px; }
+    .field label { display:block; color:var(--muted); font-size:10px; margin-bottom:7px; }
+    .field .control { width:100%; }
+    .modal-foot { display:flex; justify-content:flex-end; gap:8px; margin-top:20px; }
+    .toast { position:fixed; right:24px; bottom:24px; z-index:80; max-width:340px; padding:13px 16px; border-radius:12px; background:#302e29; color:#f8f4ed; font-size:11px; box-shadow:0 16px 45px rgba(35,31,27,.25); transform:translateY(20px); opacity:0; pointer-events:none; transition:.25s ease; }
+    .toast.show { transform:none; opacity:1; }
+    .stub {
+      padding:56px 28px;
+      text-align:center;
+      color:var(--muted);
+    }
+    .stub .shape { width:46px; height:46px; margin:0 auto 14px; border:1px solid var(--line); border-radius:15px; display:grid; place-items:center; background:var(--surface); }
+    .stub h2 { color:var(--ink); font:500 22px Georgia,serif; margin:0 0 8px; }
+    @media (max-width:1180px) {
+      :root { --sidebar: 196px; }
+      .content { padding-left:24px; padding-right:24px; }
+      .metrics { gap:10px; }
+      .metric { padding:16px; }
+      .dashboard-grid { grid-template-columns:1.45fr .9fr; }
+      .account-grid, .api-grid { grid-template-columns:repeat(2,1fr); }
+    }
+    @media (prefers-reduced-motion: reduce) { *,*::before,*::after { animation:none!important; transition:none!important; } }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-mark">矩</div>
+        <div><strong>矩阵罗盘</strong><small>MATRIX COMPASS</small></div>
+      </div>
+      <div class="nav-label">运营工作台</div>
+      <nav class="nav" aria-label="主导航">
+        <button class="active" data-page="overview"><span class="icon">⌂</span>数据总览</button>
+        <button data-page="accounts"><span class="icon">◎</span>账号管理</button>
+        <button data-page="content"><span class="icon">▱</span>作品监控</button>
+        <button data-page="fans"><span class="icon">♙</span>粉丝分析</button>
+        <button data-page="engagement"><span class="icon">◇</span>互动分析</button>
+        <button data-page="alerts"><span class="icon">△</span>异常预警</button>
+      </nav>
+      <div class="nav-label" style="margin-top:24px">系统</div>
+      <nav class="nav">
+        <button data-page="api"><span class="icon">⌘</span>系统 / API 设置</button>
+      </nav>
+      <div class="sidebar-foot">
+        <div class="sync-state"><span class="pulse"></span>Mock 数据已同步 · 10:32</div>
+      </div>
+    </aside>
+    <main class="main">
+      <header class="topbar">
+        <div class="crumb"><span>矩阵罗盘</span><span>/</span><b id="crumb">数据总览</b></div>
+        <div class="top-actions">
+          <button class="date-chip" aria-label="选择统计日期">2026.07.01 — 07.29 <span>⌄</span></button>
+          <button class="icon-btn" aria-label="通知">♢<span class="dot"></span></button>
+          <div class="avatar" title="Daniel">DA</div>
+        </div>
+      </header>
+      <div class="content">
+        <section class="page active" id="page-overview">
+          <div class="hero">
+            <div>
+              <div class="eyebrow">Good afternoon, Daniel</div>
+              <h1>今天，内容仍在生长。</h1>
+              <p>聚合 8 个账号的经营脉搏，最后更新于 10:32</p>
+            </div>
+            <div class="segmented" aria-label="时间范围">
+              <button data-range="7">近 7 天</button>
+              <button class="active" data-range="30">近 30 天</button>
+              <button data-range="90">近 90 天</button>
+            </div>
+          </div>
+          <div class="notice">
+            <span>△</span>
+            <div><strong>2 项指标值得关注</strong> 小红书「城市出逃指南」互动率连续 3 天低于基线。</div>
+            <a href="#" data-jump="alerts">查看预警 →</a>
+          </div>
+          <div class="metrics">
+            <article class="card metric" style="--tint:#eadfd4">
+              <div class="label"><span>矩阵总粉丝</span><span>01</span></div>
+              <div class="value">486,392</div>
+              <div class="delta">↗ 12.8% · 较上周期</div>
+            </article>
+            <article class="card metric" style="--tint:#dce5dc">
+              <div class="label"><span>本期净增粉</span><span>02</span></div>
+              <div class="value">+18,624</div>
+              <div class="delta">↗ 8.4% · 增长健康</div>
+            </article>
+            <article class="card metric" style="--tint:#e9e0cf">
+              <div class="label"><span>播放 / 阅读</span><span>03</span></div>
+              <div class="value">3.28M</div>
+              <div class="delta">↗ 21.6% · 2 篇爆款</div>
+            </article>
+            <article class="card metric" style="--tint:#e8d8d5">
+              <div class="label"><span>综合互动率</span><span>04</span></div>
+              <div class="value">7.42%</div>
+              <div class="delta down">↘ 0.38% · 需关注</div>
+            </article>
+          </div>
+          <div class="dashboard-grid">
+            <article class="card panel">
+              <div class="panel-head">
+                <div><div class="panel-title">增长趋势</div><div class="panel-sub">总粉丝与净增粉 · 统一经营口径</div></div>
+                <div class="legend"><span style="--c:#c65f3b">总粉丝</span><span style="--c:#738574">净增粉</span></div>
+              </div>
+              <div class="chart" aria-label="近30天增长趋势折线图">
+                <div class="chart-grid"><i></i><i></i><i></i><i></i></div>
+                <svg viewBox="0 0 640 200" preserveAspectRatio="none" role="img">
+                  <path d="M0 178 C45 166 60 157 92 158 S135 140 175 145 S222 120 267 125 S313 98 352 104 S402 71 448 84 S514 42 553 54 S605 19 640 24" fill="none" stroke="#c65f3b" stroke-width="3"/>
+                  <path d="M0 180 C60 176 76 160 110 168 S165 149 202 157 S263 131 302 143 S361 121 403 130 S460 99 502 113 S567 83 640 91" fill="none" stroke="#738574" stroke-width="2" stroke-dasharray="5 5"/>
+                  <circle cx="640" cy="24" r="4" fill="#c65f3b"/>
+                </svg>
+              </div>
+              <div class="axis"><span>07.01</span><span>07.08</span><span>07.15</span><span>07.22</span><span>07.29</span></div>
+            </article>
+            <article class="card panel">
+              <div class="panel-head"><div><div class="panel-title">平台表现</div><div class="panel-sub">播放 / 阅读贡献占比</div></div><button class="text-button">详情</button></div>
+              <div class="platform-list">
+                <div class="platform-row"><div class="platform-logo dy">抖</div><div><div class="bar-label"><span>抖音 · 3 个账号</span><span>58%</span></div><div class="bar"><i style="width:58%;--bar:#333"></i></div></div><b>1.90M</b></div>
+                <div class="platform-row"><div class="platform-logo xhs">薯</div><div><div class="bar-label"><span>小红书 · 3 个账号</span><span>27%</span></div><div class="bar"><i style="width:27%;--bar:#c65f3b"></i></div></div><b>886K</b></div>
+                <div class="platform-row"><div class="platform-logo wx">微</div><div><div class="bar-label"><span>公众号 · 2 个账号</span><span>15%</span></div><div class="bar"><i style="width:15%;--bar:#738574"></i></div></div><b>494K</b></div>
+              </div>
+            </article>
+          </div>
+          <article class="card table-card">
+            <div class="table-head"><div><div class="panel-title">近期高表现作品</div><div class="panel-sub">按跨平台标准化热度排序</div></div><button class="text-button" data-jump="content">查看全部作品 →</button></div>
+            <table>
+              <thead><tr><th>作品</th><th>平台 / 账号</th><th>播放 / 阅读</th><th>互动率</th><th>涨粉转化</th><th>识别</th></tr></thead>
+              <tbody>
+                <tr><td><div class="work"><div class="thumb">↗</div><div class="work-title">AI 产品经理的 8 种新工作方式<small>07.27 21:30 · 视频</small></div></div></td><td>抖音 · Daniel AI笔记</td><td>628,420</td><td>9.82%</td><td>2.31%</td><td><span class="pill hot">爆款</span></td></tr>
+                <tr><td><div class="work"><div class="thumb" style="background:linear-gradient(135deg,#748375,#c8b28d)">✦</div><div class="work-title">周末逃离广州：阳江海风入怀<small>07.26 18:00 · 图文</small></div></div></td><td>小红书 · 出逃指令</td><td>184,230</td><td>12.41%</td><td>3.18%</td><td><span class="pill hot">高潜</span></td></tr>
+                <tr><td><div class="work"><div class="thumb" style="background:linear-gradient(135deg,#8a7164,#d1b8a3)">AI</div><div class="work-title">我为什么开始警惕 AI 的标准答案<small>07.24 12:10 · 文章</small></div></div></td><td>公众号 · Daniel产品手记</td><td>48,216</td><td>6.94%</td><td>1.82%</td><td><span class="pill">长尾</span></td></tr>
+              </tbody>
+            </table>
+          </article>
+        </section>
+        <section class="page" id="page-accounts">
+          <div class="hero">
+            <div><div class="eyebrow">Account matrix</div><h1>账号管理</h1><p>统一查看授权、同步状态与账号经营表现</p></div>
+            <button class="btn primary" id="add-account">＋ 添加监控账号</button>
+          </div>
+          <div class="toolbar">
+            <div class="toolbar-left">
+              <select class="control" id="account-platform" aria-label="按平台筛选账号"><option value="all">全部平台</option><option value="douyin">抖音</option><option value="xiaohongshu">小红书</option><option value="wechat">微信公众号</option></select>
+              <select class="control" aria-label="按授权状态筛选"><option>全部状态</option><option>同步正常</option><option>即将过期</option><option>待授权</option></select>
+            </div>
+            <div class="toolbar-right"><span class="pill">8 个账号 · 7 个正常</span></div>
+          </div>
+          <div class="section-grid account-grid" id="account-grid">
+            <article class="card account-card" data-platform="douyin">
+              <div class="account-top"><div class="account-logo dy">抖</div><div><div class="account-name">Daniel AI笔记</div><div class="account-id">douyin_8274••92</div></div><span class="status">同步正常</span></div>
+              <div class="account-kpis"><div><span>粉丝</span><b>218.6K</b></div><div><span>近30天增粉</span><b>+9.8K</b></div><div><span>互动率</span><b>8.62%</b></div></div>
+              <div class="account-foot"><span>10:28 更新 · 官方接口</span><button class="account-detail">查看详情</button></div>
+            </article>
+            <article class="card account-card" data-platform="douyin">
+              <div class="account-top"><div class="account-logo dy">抖</div><div><div class="account-name">产品人的日常</div><div class="account-id">douyin_1328••06</div></div><span class="status">同步正常</span></div>
+              <div class="account-kpis"><div><span>粉丝</span><b>63.2K</b></div><div><span>近30天增粉</span><b>+2.1K</b></div><div><span>互动率</span><b>6.18%</b></div></div>
+              <div class="account-foot"><span>10:27 更新 · 官方接口</span><button class="account-detail">查看详情</button></div>
+            </article>
+            <article class="card account-card" data-platform="douyin">
+              <div class="account-top"><div class="account-logo dy">抖</div><div><div class="account-name">出逃指令</div><div class="account-id">douyin_4621••73</div></div><span class="status warn">7 天后过期</span></div>
+              <div class="account-kpis"><div><span>粉丝</span><b>41.7K</b></div><div><span>近30天增粉</span><b>+1.4K</b></div><div><span>互动率</span><b>9.21%</b></div></div>
+              <div class="account-foot"><span>09:58 更新 · 需续期</span><button class="account-detail">查看详情</button></div>
+            </article>
+            <article class="card account-card" data-platform="xiaohongshu">
+              <div class="account-top"><div class="account-logo xhs">薯</div><div><div class="account-name">Daniel的AI生活</div><div class="account-id">xhs_6682••51</div></div><span class="status">同步正常</span></div>
+              <div class="account-kpis"><div><span>粉丝</span><b>72.4K</b></div><div><span>近30天增粉</span><b>+2.8K</b></div><div><span>互动率</span><b>11.42%</b></div></div>
+              <div class="account-foot"><span>10:31 更新 · 官方接口</span><button class="account-detail">查看详情</button></div>
+            </article>
+            <article class="card account-card" data-platform="xiaohongshu">
+              <div class="account-top"><div class="account-logo xhs">薯</div><div><div class="account-name">城市出逃指南</div><div class="account-id">xhs_9041••28</div></div><span class="status off">互动异常</span></div>
+              <div class="account-kpis"><div><span>粉丝</span><b>36.9K</b></div><div><span>近30天增粉</span><b>+912</b></div><div><span>互动率</span><b>5.03%</b></div></div>
+              <div class="account-foot"><span>10:30 更新 · 数据完整</span><button class="account-detail">查看详情</button></div>
+            </article>
+            <article class="card account-card" data-platform="xiaohongshu">
+              <div class="account-top"><div class="account-logo xhs">薯</div><div><div class="account-name">产品经理灵感簿</div><div class="account-id">xhs_2217••19</div></div><span class="status">同步正常</span></div>
+              <div class="account-kpis"><div><span>粉丝</span><b>18.3K</b></div><div><span>近30天增粉</span><b>+706</b></div><div><span>互动率</span><b>8.04%</b></div></div>
+              <div class="account-foot"><span>10:29 更新 · 官方接口</span><button class="account-detail">查看详情</button></div>
+            </article>
+            <article class="card account-card" data-platform="wechat">
+              <div class="account-top"><div class="account-logo wx">微</div><div><div class="account-name">Daniel产品手记</div><div class="account-id">wx_gh_72••e8</div></div><span class="status">同步正常</span></div>
+              <div class="account-kpis"><div><span>关注者</span><b>24.8K</b></div><div><span>近30天增粉</span><b>+621</b></div><div><span>互动率</span><b>5.82%</b></div></div>
+              <div class="account-foot"><span>10:18 更新 · 官方接口</span><button class="account-detail">查看详情</button></div>
+            </article>
+            <article class="card account-card" data-platform="wechat">
+              <div class="account-top"><div class="account-logo wx">微</div><div><div class="account-name">出逃城市观察</div><div class="account-id">wx_gh_19••b4</div></div><span class="status">同步正常</span></div>
+              <div class="account-kpis"><div><span>关注者</span><b>10.5K</b></div><div><span>近30天增粉</span><b>+275</b></div><div><span>互动率</span><b>4.91%</b></div></div>
+              <div class="account-foot"><span>10:16 更新 · 官方接口</span><button class="account-detail">查看详情</button></div>
+            </article>
+          </div>
+        </section>
+
+        <section class="page" id="page-content">
+          <div class="hero">
+            <div><div class="eyebrow">Content intelligence</div><h1>作品监控</h1><p>归一化跨平台指标，识别高潜内容与表现差异</p></div>
+            <button class="btn" id="export-csv">⇩ 导出 CSV</button>
+          </div>
+          <div class="mini-metrics">
+            <article class="card mini"><span>本期收录作品</span><b>126</b></article>
+            <article class="card mini"><span>识别爆款 / 高潜</span><b>8 / 17</b></article>
+            <article class="card mini"><span>最佳发布时间</span><b>周四 20:30</b></article>
+          </div>
+          <div class="toolbar">
+            <div class="toolbar-left">
+              <input class="control search" id="content-search" type="search" placeholder="搜索作品标题…" aria-label="搜索作品标题">
+              <select class="control" id="content-platform" aria-label="按平台筛选作品"><option value="all">全部平台</option><option value="douyin">抖音</option><option value="xiaohongshu">小红书</option><option value="wechat">公众号</option></select>
+              <select class="control" aria-label="按内容类型筛选"><option>全部类型</option><option>视频</option><option>图文</option><option>文章</option></select>
+            </div>
+            <div class="toolbar-right"><span class="pill">数据延迟约 5–15 分钟</span></div>
+          </div>
+          <article class="card table-card" style="margin-top:0">
+            <table class="content-table">
+              <thead><tr><th>作品</th><th>平台 / 账号</th><th class="sortable" id="sort-plays">播放 / 阅读 ↕</th><th>互动率</th><th>涨粉转化</th><th>标签</th><th></th></tr></thead>
+              <tbody id="content-body">
+                <tr class="content-row" data-platform="douyin" data-title="AI 产品经理的 8 种新工作方式" data-plays="628420"><td><div class="work"><div class="thumb">↗</div><div class="work-title">AI 产品经理的 8 种新工作方式<small>07.27 21:30 · 视频</small></div></div></td><td>抖音 · Daniel AI笔记</td><td>628,420</td><td>9.82%</td><td>2.31%</td><td><span class="pill hot">爆款</span></td><td><button class="text-button detail-btn">详情</button></td></tr>
+                <tr class="content-row" data-platform="xiaohongshu" data-title="周末逃离广州：阳江海风入怀" data-plays="184230"><td><div class="work"><div class="thumb" style="background:linear-gradient(135deg,#748375,#c8b28d)">✦</div><div class="work-title">周末逃离广州：阳江海风入怀<small>07.26 18:00 · 图文</small></div></div></td><td>小红书 · 出逃指令</td><td>184,230</td><td>12.41%</td><td>3.18%</td><td><span class="pill hot">高潜</span></td><td><button class="text-button detail-btn">详情</button></td></tr>
+                <tr class="content-row" data-platform="wechat" data-title="我为什么开始警惕 AI 的标准答案" data-plays="48216"><td><div class="work"><div class="thumb" style="background:linear-gradient(135deg,#8a7164,#d1b8a3)">AI</div><div class="work-title">我为什么开始警惕 AI 的标准答案<small>07.24 12:10 · 文章</small></div></div></td><td>公众号 · Daniel产品手记</td><td>48,216</td><td>6.94%</td><td>1.82%</td><td><span class="pill">长尾</span></td><td><button class="text-button detail-btn">详情</button></td></tr>
+                <tr class="content-row" data-platform="douyin" data-title="Vibe Coding 自我审查缺失有多危险" data-plays="356810"><td><div class="work"><div class="thumb">QA</div><div class="work-title">Vibe Coding 自我审查缺失有多危险<small>07.22 20:45 · 视频</small></div></div></td><td>抖音 · 产品人的日常</td><td>356,810</td><td>8.11%</td><td>1.66%</td><td><span class="pill hot">高潜</span></td><td><button class="text-button detail-btn">详情</button></td></tr>
+                <tr class="content-row" data-platform="xiaohongshu" data-title="一个人去看海，是成年人短暂的自由" data-plays="132590"><td><div class="work"><div class="thumb" style="background:linear-gradient(135deg,#687d79,#b7c3b9)">海</div><div class="work-title">一个人去看海，是成年人短暂的自由<small>07.21 17:30 · 图文</small></div></div></td><td>小红书 · 城市出逃指南</td><td>132,590</td><td>5.03%</td><td>1.21%</td><td><span class="pill">观察</span></td><td><button class="text-button detail-btn">详情</button></td></tr>
+                <tr class="content-row" data-platform="wechat" data-title="Coze 3.0 真正改变的不是工作流" data-plays="36780"><td><div class="work"><div class="thumb" style="background:linear-gradient(135deg,#725d54,#b99278)">3.0</div><div class="work-title">Coze 3.0 真正改变的不是工作流<small>07.18 11:30 · 文章</small></div></div></td><td>公众号 · Daniel产品手记</td><td>36,780</td><td>5.76%</td><td>1.31%</td><td><span class="pill">稳健</span></td><td><button class="text-button detail-btn">详情</button></td></tr>
+                <tr class="content-row" data-platform="douyin" data-title="小程序从想法到 Demo 的 48 小时" data-plays="291420"><td><div class="work"><div class="thumb">48h</div><div class="work-title">小程序从想法到 Demo 的 48 小时<small>07.16 19:50 · 视频</small></div></div></td><td>抖音 · Daniel AI笔记</td><td>291,420</td><td>7.63%</td><td>1.72%</td><td><span class="pill">稳健</span></td><td><button class="text-button detail-btn">详情</button></td></tr>
+                <tr class="content-row" data-platform="xiaohongshu" data-title="广州周末散步地图：不去商场" data-plays="99760"><td><div class="work"><div class="thumb" style="background:linear-gradient(135deg,#8b765a,#c8b58d)">⌖</div><div class="work-title">广州周末散步地图：不去商场<small>07.14 16:20 · 图文</small></div></div></td><td>小红书 · 出逃指令</td><td>99,760</td><td>10.22%</td><td>2.74%</td><td><span class="pill hot">高潜</span></td><td><button class="text-button detail-btn">详情</button></td></tr>
+              </tbody>
+            </table>
+            <div class="empty" id="content-empty">没有找到符合条件的作品，尝试清空搜索或切换平台。</div>
+            <div class="pagination"><span id="result-count">共 8 条作品</span><div><button id="prev-page" disabled>‹</button> <button id="next-page">›</button></div></div>
+          </article>
+        </section>
+
+        <section class="page" id="page-fans">
+          <div class="hero"><div><div class="eyebrow">Audience growth</div><h1>粉丝分析</h1><p>关注净增长、来源结构与账号贡献，不把跨平台口径混为一谈</p></div><div class="segmented"><button>近 7 天</button><button class="active">近 30 天</button><button>近 90 天</button></div></div>
+          <div class="mini-metrics"><article class="card mini"><span>矩阵总粉丝</span><b>486,392</b></article><article class="card mini"><span>净增粉</span><b style="color:var(--green)">+18,624</b></article><article class="card mini"><span>涨粉转化率</span><b>1.94%</b></article></div>
+          <div class="analysis-grid">
+            <article class="card panel">
+              <div class="panel-head"><div><div class="panel-title">账号增粉贡献</div><div class="panel-sub">按近 30 天净增粉排序</div></div><span class="pill">共 8 个账号</span></div>
+              <div class="rank-list">
+                <div class="rank-item"><span class="rank-num">01</span><span>Daniel AI笔记</span><div class="rank-bar"><i style="width:100%"></i></div><b>+9,812</b></div>
+                <div class="rank-item"><span class="rank-num">02</span><span>Daniel的AI生活</span><div class="rank-bar"><i style="width:53%"></i></div><b>+2,801</b></div>
+                <div class="rank-item"><span class="rank-num">03</span><span>产品人的日常</span><div class="rank-bar"><i style="width:42%"></i></div><b>+2,126</b></div>
+                <div class="rank-item"><span class="rank-num">04</span><span>出逃指令</span><div class="rank-bar"><i style="width:29%"></i></div><b>+1,423</b></div>
+                <div class="rank-item"><span class="rank-num">05</span><span>城市出逃指南</span><div class="rank-bar"><i style="width:18%"></i></div><b>+912</b></div>
+                <div class="rank-item"><span class="rank-num">06</span><span>其他 3 个账号</span><div class="rank-bar"><i style="width:32%"></i></div><b>+1,550</b></div>
+              </div>
+            </article>
+            <article class="card panel">
+              <div class="panel-head"><div><div class="panel-title">粉丝来源结构</div><div class="panel-sub">平台原始来源归类后的可比口径</div></div></div>
+              <div class="stacked"><i style="width:46%;background:#c65f3b"></i><i style="width:31%;background:#738574"></i><i style="width:15%;background:#b69a64"></i><i style="width:8%;background:#d9d1c5"></i></div>
+              <div class="split-legend"><div><span>内容推荐</span><b>46%</b></div><div><span>主页访问</span><b>31%</b></div><div><span>搜索 / 分享</span><b>23%</b></div></div>
+              <p class="panel-sub" style="margin-top:18px;line-height:1.6">注：各平台来源字段存在差异，此处只展示已建立映射的数据；无法归类的流量保留在「其他」。</p>
+            </article>
+          </div>
+        </section>
+
+        <section class="page" id="page-engagement">
+          <div class="hero"><div><div class="eyebrow">Engagement signals</div><h1>互动分析</h1><p>拆解点赞、评论、收藏与转发，理解内容为什么被回应</p></div><button class="btn">选择账号组合 ⌄</button></div>
+          <div class="mini-metrics"><article class="card mini"><span>综合互动量</span><b>243,806</b></article><article class="card mini"><span>综合互动率</span><b>7.42%</b></article><article class="card mini"><span>评论情绪正向率</span><b>82.6%</b></article></div>
+          <div class="analysis-grid">
+            <article class="card panel">
+              <div class="panel-head"><div><div class="panel-title">互动构成</div><div class="panel-sub">近 30 天 · 已按平台原始指标映射</div></div></div>
+              <div class="donut-wrap"><div class="donut"></div><div class="legend-vertical"><span style="--c:#c65f3b">点赞 42% · 102.4K</span><span style="--c:#738574">收藏 27% · 65.8K</span><span style="--c:#b69a64">评论 19% · 46.3K</span><span style="--c:#d9d1c5">分享 12% · 29.3K</span></div></div>
+            </article>
+            <article class="card panel">
+              <div class="panel-head"><div><div class="panel-title">高频评论主题</div><div class="panel-sub">脱敏评论样本 · Mock AI 聚类结果</div></div></div>
+              <div class="keyword-cloud"><span style="--s:5px">想看教程</span><span style="--s:3px">产品经理</span><span style="--s:6px">太真实了</span><span style="--s:2px">广州周末</span><span style="--s:4px">AI焦虑</span><span style="--s:1px">求路线</span><span style="--s:3px">收藏了</span><span style="--s:1px">实用</span></div>
+            </article>
+          </div>
+          <article class="card ai-card" style="margin-top:14px">
+            <span class="ai-tag">AI 建议 · Mock 结果</span>
+            <div class="panel-title">最近的回应告诉了我们什么？</div>
+            <div class="panel-sub">基于近 30 天互动构成、评论主题和表现差异生成，接入真实模型前需经过脱敏与人工复核。</div>
+            <ul><li>教程型内容的收藏率比观点型内容高 2.1 倍，适合继续做成连续栏目。</li><li>「城市出逃」内容评论意愿强，但最近封面点击率下降，先检查选题同质化而非盲目加大发布频率。</li><li>抖音晚间 20:00–22:00 的互动更集中，小红书周末下午的收藏转化更好。</li></ul>
+          </article>
+        </section>
+
+        <section class="page" id="page-alerts">
+          <div class="hero"><div><div class="eyebrow">Exception center</div><h1>异常预警</h1><p>只提示可行动的变化，避免把正常波动误判为异常</p></div><div class="segmented"><button class="active">全部</button><button>指标异常</button><button>接口 / 授权</button></div></div>
+          <div class="toolbar"><div class="toolbar-left"><span class="pill hot" id="unhandled-count">3 项待处理</span><span class="pill">2 项已恢复</span></div><button class="btn ghost" id="mark-all">全部标为已处理</button></div>
+          <div class="alert-list">
+            <article class="card alert-item" data-alert="a1"><span class="severity"></span><div><div class="alert-title">互动率连续 3 天低于账号基线</div><div class="alert-desc">小红书 · 城市出逃指南 · 当前 5.03%，低于 30 日均值 31%</div></div><div class="alert-meta">触发：07.29 09:40<br>规则：连续 3 天低于均值 25%</div><div class="alert-actions"><button class="btn handle-alert">标记处理</button><button class="btn">查看详情</button></div></article>
+            <article class="card alert-item" data-alert="a2"><span class="severity medium"></span><div><div class="alert-title">抖音账号授权将在 7 天后过期</div><div class="alert-desc">抖音 · 出逃指令 · 到期前需通过官方 OAuth 完成续期</div></div><div class="alert-meta">触发：07.29 08:00<br>风险：过期后停止同步</div><div class="alert-actions"><button class="btn handle-alert">标记处理</button><button class="btn">查看指引</button></div></article>
+            <article class="card alert-item" data-alert="a3"><span class="severity medium"></span><div><div class="alert-title">公众号接口请求接近当日配额</div><div class="alert-desc">已使用 78% 请求预算；系统不会加速调用或尝试绕过平台限制</div></div><div class="alert-meta">触发：07.29 10:20<br>策略：降低非关键同步频率</div><div class="alert-actions"><button class="btn handle-alert">标记处理</button><button class="btn">查看预算</button></div></article>
+            <article class="card alert-item" data-alert="a4"><span class="severity info"></span><div><div class="alert-title">抖音数据同步延迟已恢复</div><div class="alert-desc">官方接口在 09:12–09:28 返回间歇性超时，未进行无限重试</div></div><div class="alert-meta">恢复：07.29 09:31<br>重试：2 次，指数退避</div><div class="alert-actions"><button class="btn handle-alert">归档</button></div></article>
+          </div>
+        </section>
+
+        <section class="page" id="page-api">
+          <div class="hero"><div><div class="eyebrow">Safe integrations</div><h1>系统 / API 设置</h1><p>通过后端安全代理对接官方开放平台，浏览器端不保存任何 AppSecret 或访问令牌</p></div><span class="pill">当前：Mock 模式</span></div>
+          <div class="security-banner"><span>▣</span><div><b>合规调用是不可越过的系统边界</b><p>仅接入各平台官方开放接口；遇到 401/403/429、授权范围不足、频率限制或平台风控时立即降级并提示，不尝试抓包、逆向、伪造设备、轮换账号或绕过限制。生产环境密钥必须由后端密钥服务托管。</p></div></div>
+          <div class="section-grid api-grid">
+            <article class="card api-card" data-api="douyin"><div class="api-card-head"><div class="platform-logo dy">抖</div><div><h3>抖音开放平台</h3><div class="account-id">Adapter: douyin.v1</div></div><span class="status">Mock 正常</span></div><div class="api-meta"><div><span>鉴权方式</span><b>OAuth 2.0 / 后端托管</b></div><div><span>请求预算</span><b>42% 已使用</b></div><div><span>自动重试</span><b>最多 2 次</b></div></div><select class="control api-scenario" style="width:100%;margin-bottom:9px" aria-label="抖音接口测试场景"><option value="success">模拟：连接正常</option><option value="rate">模拟：触发限流</option><option value="auth">模拟：授权过期</option><option value="timeout">模拟：网络超时</option></select><button class="btn api-test" style="width:100%">运行安全模拟测试</button><div class="api-result" style="margin-top:9px">未运行测试，不会向真实平台发送请求。</div></article>
+            <article class="card api-card" data-api="xiaohongshu"><div class="api-card-head"><div class="platform-logo xhs">薯</div><div><h3>小红书开放平台</h3><div class="account-id">Adapter: xhs.v1</div></div><span class="status">Mock 正常</span></div><div class="api-meta"><div><span>鉴权方式</span><b>官方授权 / 后端托管</b></div><div><span>请求预算</span><b>31% 已使用</b></div><div><span>自动重试</span><b>最多 2 次</b></div></div><select class="control api-scenario" style="width:100%;margin-bottom:9px" aria-label="小红书接口测试场景"><option value="success">模拟：连接正常</option><option value="rate">模拟：触发限流</option><option value="auth">模拟：授权过期</option><option value="timeout">模拟：网络超时</option></select><button class="btn api-test" style="width:100%">运行安全模拟测试</button><div class="api-result" style="margin-top:9px">未运行测试，不会向真实平台发送请求。</div></article>
+            <article class="card api-card" data-api="wechat"><div class="api-card-head"><div class="platform-logo wx">微</div><div><h3>微信公众号</h3><div class="account-id">Adapter: wechat.v1</div></div><span class="status warn">配额关注</span></div><div class="api-meta"><div><span>鉴权方式</span><b>后端 access_token</b></div><div><span>请求预算</span><b>78% 已使用</b></div><div><span>自动重试</span><b>最多 1 次</b></div></div><select class="control api-scenario" style="width:100%;margin-bottom:9px" aria-label="公众号接口测试场景"><option value="success">模拟：连接正常</option><option value="rate">模拟：触发限流</option><option value="auth">模拟：授权过期</option><option value="timeout">模拟：网络超时</option></select><button class="btn api-test" style="width:100%">运行安全模拟测试</button><div class="api-result" style="margin-top:9px">未运行测试，不会向真实平台发送请求。</div></article>
+          </div>
+          <article class="card contract"><div class="panel-head"><div><div class="panel-title">统一数据契约</div><div class="panel-sub">三平台适配器输出同一结构，同时保留 source_metrics 原始指标</div></div><button class="btn" id="copy-contract">复制 JSON 示例</button></div><pre id="contract-code">{
+  "meta": { "platform": "douyin", "account_id": "masked-id", "synced_at": "2026-07-29T10:32:00+08:00" },
+  "data": { "followers": 218600, "net_followers": 9812, "views": 1900000, "engagement_rate": 0.0862 },
+  "source_metrics": { "play_count": 1900000, "digg_count": 102400 },
+  "limits": { "remaining_ratio": 0.58, "retry_after": null },
+  "error": null
+}</pre></article>
+        </section>
+      </div>
+    </main>
+  </div>
+  <aside class="drawer" id="detail-drawer" aria-hidden="true">
+    <div class="scrim" data-close="drawer"></div>
+    <div class="drawer-panel" role="dialog" aria-modal="true" aria-labelledby="detail-title">
+      <button class="close" data-close="drawer" aria-label="关闭详情">×</button>
+      <div class="detail-hero"><div class="eyebrow">Content detail</div><h2 id="detail-title">作品详情</h2><p id="detail-meta" style="font-size:10px;margin:0">跨平台标准化指标 · Mock 数据</p></div>
+      <div class="detail-kpis"><div><span>播放 / 阅读</span><b id="detail-plays">—</b></div><div><span>互动率</span><b>9.82%</b></div><div><span>涨粉转化</span><b>2.31%</b></div></div>
+      <article class="card panel" style="margin-top:12px;min-height:auto"><div class="panel-title">表现判断</div><p class="panel-sub" style="font-size:11px;line-height:1.8">该作品前 6 小时增长斜率高于账号近 30 天中位数，收藏与评论的比例更健康。建议继续观察 48 小时长尾表现，不建议为了追求短期增量重复发布相似内容。</p></article>
+      <article class="card panel" style="margin-top:12px;min-height:auto"><div class="panel-title">平台原始指标</div><pre>{"status":"mock","data_scope":"official_open_api","token_location":"backend_only"}</pre></article>
+    </div>
+  </aside>
+  <div class="modal" id="account-modal" aria-hidden="true">
+    <div class="scrim" data-close="modal"></div>
+    <form class="modal-card" id="account-form">
+      <button class="close" type="button" data-close="modal" aria-label="关闭添加账号">×</button>
+      <h2>添加监控账号</h2>
+      <p>这里只记录展示名称与平台标识，不接收密码、AppSecret、Cookie 或访问令牌。真实授权必须跳转到平台官方 OAuth，并由后端安全接收凭证。</p>
+      <div class="field"><label for="new-platform">平台</label><select class="control" id="new-platform" required><option value="douyin">抖音</option><option value="xiaohongshu">小红书</option><option value="wechat">微信公众号</option></select></div>
+      <div class="field"><label for="new-name">账号展示名称</label><input class="control" id="new-name" maxlength="30" placeholder="例如：Daniel的内容实验室" required></div>
+      <div class="field"><label for="new-id">平台账号标识（非密钥）</label><input class="control" id="new-id" maxlength="40" placeholder="例如：account_demo_01" required></div>
+      <div class="modal-foot"><button class="btn" type="button" data-close="modal">取消</button><button class="btn primary" type="submit">保存为 Mock 账号</button></div>
+    </form>
+  </div>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <script>
+    "use strict";
+
+    /*
+      生产接入边界：
+      1) 浏览器只调用自有后端 /api/social/*，绝不直连平台敏感接口。
+      2) access_token / AppSecret / Cookie 仅由后端密钥服务托管。
+      3) 401/403/429 不重试或按 Retry-After 有界重试；绝不轮换账号绕过限制。
+      4) 当前文件所有结果均为 Mock，不会向抖音、小红书、微信公众号发送请求。
+    */
+    const SocialApi = Object.freeze({
+      mode: "mock",
+      contracts: {
+        douyin: { adapter: "douyin.v1", retries: 2 },
+        xiaohongshu: { adapter: "xhs.v1", retries: 2 },
+        wechat: { adapter: "wechat.v1", retries: 1 }
+      },
+      async test(platform, scenario) {
+        if (!this.contracts[platform]) throw new Error("UNSUPPORTED_PLATFORM");
+        await new Promise(resolve => setTimeout(resolve, 650));
+        const outcomes = {
+          success: { ok:true, code:"MOCK_OK", message:"模拟连接正常；未向真实平台发送请求。" },
+          rate: { ok:false, code:"MOCK_429", message:"模拟触发限流：停止请求，等待平台 Retry-After，不尝试绕过。" },
+          auth: { ok:false, code:"MOCK_401", message:"模拟授权过期：停止同步并要求通过官方授权流程续期。" },
+          timeout: { ok:false, code:"MOCK_TIMEOUT", message:"模拟网络超时：达到有界重试上限后停止，不进行无限重试。" }
+        };
+        return outcomes[scenario] || outcomes.success;
+      }
+    });
+
+    const labels = {overview:"数据总览",accounts:"账号管理",content:"作品监控",fans:"粉丝分析",engagement:"互动分析",alerts:"异常预警",api:"系统 / API 设置"};
+    const storage = {
+      read(key, fallback) {
+        try { const value = JSON.parse(localStorage.getItem(key)); return value ?? fallback; }
+        catch { return fallback; }
+      },
+      write(key, value) {
+        try { localStorage.setItem(key, JSON.stringify(value)); }
+        catch { showToast("浏览器未允许本地保存，本次操作仅在当前页面有效。"); }
+      }
+    };
+
+    function showToast(message) {
+      const el = document.getElementById("toast");
+      el.textContent = message;
+      el.classList.add("show");
+      clearTimeout(showToast.timer);
+      showToast.timer = setTimeout(() => el.classList.remove("show"), 2800);
+    }
+
+    function showPage(name) {
+      if (!labels[name]) return;
+      document.querySelectorAll(".page").forEach(el => el.classList.toggle("active", el.id === "page-" + name));
+      document.querySelectorAll("[data-page]").forEach(el => el.classList.toggle("active", el.dataset.page === name));
+      document.getElementById("crumb").textContent = labels[name];
+      storage.write("matrix-compass-page", name);
+      window.scrollTo({top:0, behavior:"smooth"});
+    }
+
+    document.querySelectorAll("[data-page]").forEach(btn => btn.addEventListener("click", () => showPage(btn.dataset.page)));
+    document.querySelectorAll("[data-jump]").forEach(btn => btn.addEventListener("click", event => { event.preventDefault(); showPage(btn.dataset.jump); }));
+    document.querySelectorAll("[data-range]").forEach(btn => btn.addEventListener("click", () => {
+      document.querySelectorAll("[data-range]").forEach(item => item.classList.remove("active"));
+      btn.classList.add("active");
+      storage.write("matrix-compass-range", btn.dataset.range);
+      showToast("已切换为近 " + btn.dataset.range + " 天视图（Mock 数据）");
+    }));
+
+    const savedPage = storage.read("matrix-compass-page", "overview");
+    showPage(savedPage);
+    const savedRange = storage.read("matrix-compass-range", "30");
+    const savedRangeButton = document.querySelector('[data-range="' + savedRange + '"]');
+    if (savedRangeButton) {
+      document.querySelectorAll("[data-range]").forEach(item => item.classList.toggle("active", item === savedRangeButton));
+    }
+
+    const accountPlatform = document.getElementById("account-platform");
+    accountPlatform.addEventListener("change", () => {
+      document.querySelectorAll("#account-grid .account-card").forEach(card => {
+        card.style.display = accountPlatform.value === "all" || card.dataset.platform === accountPlatform.value ? "" : "none";
+      });
+    });
+
+    const modal = document.getElementById("account-modal");
+    document.getElementById("add-account").addEventListener("click", () => {
+      modal.classList.add("open");
+      modal.setAttribute("aria-hidden", "false");
+      document.getElementById("new-name").focus();
+    });
+    document.querySelectorAll('[data-close="modal"]').forEach(btn => btn.addEventListener("click", () => {
+      modal.classList.remove("open");
+      modal.setAttribute("aria-hidden", "true");
+    }));
+    document.getElementById("account-form").addEventListener("submit", event => {
+      event.preventDefault();
+      const platform = document.getElementById("new-platform").value;
+      const name = document.getElementById("new-name").value.trim();
+      const id = document.getElementById("new-id").value.trim();
+      if (!name || !id) return;
+      const added = storage.read("matrix-compass-added-accounts", []);
+      added.push({ platform, name, id, createdAt: new Date().toISOString() });
+      storage.write("matrix-compass-added-accounts", added.slice(-20));
+      modal.classList.remove("open");
+      modal.setAttribute("aria-hidden", "true");
+      event.target.reset();
+      showToast("已保存为本地 Mock 账号；尚未连接真实平台。");
+    });
+
+    const contentRows = Array.from(document.querySelectorAll(".content-row"));
+    let page = 1;
+    let descending = true;
+    const pageSize = 5;
+    function renderContent() {
+      const query = document.getElementById("content-search").value.trim().toLowerCase();
+      const platform = document.getElementById("content-platform").value;
+      const filtered = contentRows.filter(row => (!query || row.dataset.title.toLowerCase().includes(query)) && (platform === "all" || row.dataset.platform === platform));
+      const sorted = filtered.sort((a,b) => descending ? Number(b.dataset.plays)-Number(a.dataset.plays) : Number(a.dataset.plays)-Number(b.dataset.plays));
+      const maxPage = Math.max(1, Math.ceil(sorted.length/pageSize));
+      page = Math.min(page, maxPage);
+      contentRows.forEach(row => row.style.display = "none");
+      sorted.slice((page-1)*pageSize, page*pageSize).forEach(row => {
+        row.style.display = "";
+        document.getElementById("content-body").appendChild(row);
+      });
+      document.getElementById("content-empty").style.display = sorted.length ? "none" : "block";
+      document.querySelector(".content-table").style.display = sorted.length ? "table" : "none";
+      document.getElementById("result-count").textContent = "共 " + sorted.length + " 条作品 · 第 " + page + "/" + maxPage + " 页";
+      document.getElementById("prev-page").disabled = page <= 1;
+      document.getElementById("next-page").disabled = page >= maxPage;
+    }
+    document.getElementById("content-search").addEventListener("input", () => { page=1; renderContent(); });
+    document.getElementById("content-platform").addEventListener("change", () => { page=1; renderContent(); });
+    document.getElementById("sort-plays").addEventListener("click", () => { descending=!descending; renderContent(); });
+    document.getElementById("prev-page").addEventListener("click", () => { page=Math.max(1,page-1); renderContent(); });
+    document.getElementById("next-page").addEventListener("click", () => { page+=1; renderContent(); });
+    renderContent();
+
+    const drawer = document.getElementById("detail-drawer");
+    document.querySelectorAll(".detail-btn, .account-detail").forEach(btn => btn.addEventListener("click", () => {
+      const row = btn.closest(".content-row");
+      const account = btn.closest(".account-card");
+      document.getElementById("detail-title").textContent = row ? row.dataset.title : account.querySelector(".account-name").textContent;
+      document.getElementById("detail-plays").textContent = row ? Number(row.dataset.plays).toLocaleString("zh-CN") : account.querySelector(".account-kpis b").textContent;
+      document.getElementById("detail-meta").textContent = row ? "作品表现 · 跨平台标准化指标 · Mock 数据" : "账号经营趋势 · Mock 数据";
+      drawer.classList.add("open");
+      drawer.setAttribute("aria-hidden", "false");
+    }));
+    document.querySelectorAll('[data-close="drawer"]').forEach(btn => btn.addEventListener("click", () => {
+      drawer.classList.remove("open");
+      drawer.setAttribute("aria-hidden", "true");
+    }));
+
+    document.getElementById("export-csv").addEventListener("click", () => {
+      const header = ["作品标题","平台","播放/阅读","互动率","涨粉转化"];
+      const body = contentRows.map(row => {
+        const cells = row.querySelectorAll("td");
+        return [row.dataset.title, cells[1].textContent.trim(), row.dataset.plays, cells[3].textContent.trim(), cells[4].textContent.trim()];
+      });
+      const csv = [header, ...body].map(cols => cols.map(value => '"' + String(value).replaceAll('"','""') + '"').join(",")).join("\n");
+      const blob = new Blob(["\ufeff" + csv], {type:"text/csv;charset=utf-8"});
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = "matrix-compass-content.csv";
+      link.click();
+      URL.revokeObjectURL(url);
+      showToast("CSV 已导出；内容仅为当前 Mock 数据。");
+    });
+
+    const handled = new Set(storage.read("matrix-compass-handled-alerts", []));
+    function renderAlerts() {
+      document.querySelectorAll("[data-alert]").forEach(item => item.classList.toggle("handled", handled.has(item.dataset.alert)));
+      const remaining = document.querySelectorAll("[data-alert]").length - handled.size;
+      document.getElementById("unhandled-count").textContent = Math.max(0,remaining) + " 项待处理";
+      storage.write("matrix-compass-handled-alerts", Array.from(handled));
+    }
+    document.querySelectorAll(".handle-alert").forEach(btn => btn.addEventListener("click", () => {
+      handled.add(btn.closest("[data-alert]").dataset.alert);
+      renderAlerts();
+      showToast("已在本地标记处理，不会回写任何平台。");
+    }));
+    document.getElementById("mark-all").addEventListener("click", () => {
+      document.querySelectorAll("[data-alert]").forEach(item => handled.add(item.dataset.alert));
+      renderAlerts();
+      showToast("全部预警已在本地标记处理。");
+    });
+    renderAlerts();
+
+    document.querySelectorAll(".api-test").forEach(button => button.addEventListener("click", async () => {
+      const card = button.closest("[data-api]");
+      const platform = card.dataset.api;
+      const scenario = card.querySelector(".api-scenario").value;
+      const resultBox = card.querySelector(".api-result");
+      button.disabled = true;
+      resultBox.className = "api-result loading";
+      resultBox.textContent = "正在执行本地安全模拟，不会访问真实平台…";
+      try {
+        const result = await SocialApi.test(platform, scenario);
+        resultBox.className = "api-result " + (result.ok ? "success" : "error");
+        resultBox.textContent = result.code + " · " + result.message;
+      } catch {
+        resultBox.className = "api-result error";
+        resultBox.textContent = "模拟器异常，已停止；没有向真实平台发送请求。";
+      } finally {
+        button.disabled = false;
+      }
+    }));
+
+    document.getElementById("copy-contract").addEventListener("click", async () => {
+      const text = document.getElementById("contract-code").textContent;
+      try { await navigator.clipboard.writeText(text); showToast("JSON 契约示例已复制。"); }
+      catch { showToast("浏览器未允许复制，请手动选择代码。"); }
+    });
+
+    document.addEventListener("keydown", event => {
+      if (event.key !== "Escape") return;
+      drawer.classList.remove("open");
+      modal.classList.remove("open");
+      drawer.setAttribute("aria-hidden", "true");
+      modal.setAttribute("aria-hidden", "true");
+    });
+  </script>
+</body>
+</html>
