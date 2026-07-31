@@ -15,6 +15,8 @@ Object.values(runtimePaths).forEach((directory) => mkdirSync(directory, { recurs
 
 const environment = {
   ...process.env,
+  MATRIX_COMPASS_MODE: "demo",
+  MATRIX_COMPASS_LAN: "false",
   XDG_CONFIG_HOME: runtimePaths.config,
   TMPDIR: runtimePaths.temp,
   WRANGLER_WRITE_LOGS: "false",

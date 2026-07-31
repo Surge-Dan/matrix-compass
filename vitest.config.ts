@@ -10,6 +10,12 @@ export default defineConfig({
         "lib/dashboard-format.ts",
         "app/api/dashboard/route.ts",
         "app/api/health/route.ts",
+        "db/migrate.ts",
+        "db/schema.ts",
+        "lib/backup/manifest.ts",
+        "lib/runtime/data-dir.ts",
+        "lib/runtime/local-d1.ts",
+        "lib/runtime/mode.ts",
       ],
       reporter: ["text", "json-summary"],
       thresholds: {

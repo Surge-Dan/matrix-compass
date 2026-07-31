@@ -130,6 +130,9 @@ test("health API identifies the app and demo data source", async () => {
     status: "ok",
     app: "matrix-compass",
     version: "0.1.0",
+    mode: "demo",
     dataSource: "demo",
+    schemaVersion: 0,
+    readOnly: true,
   });
 });

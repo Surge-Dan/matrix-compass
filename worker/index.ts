@@ -8,6 +8,9 @@ interface AssetFetcher {
 
 interface Env {
   ASSETS: AssetFetcher;
+  DB: D1Database;
+  MATRIX_COMPASS_MODE: "local" | "demo";
+  MATRIX_COMPASS_LAN: "true" | "false";
   IMAGES: {
     input(stream: ReadableStream): {
       transform(options: Record<string, unknown>): {

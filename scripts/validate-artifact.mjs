@@ -1,5 +1,6 @@
 import { existsSync } from "node:fs";
-import { readFile } from "node:fs/promises";
+import { readFile, readdir } from "node:fs/promises";
+import { homedir } from "node:os";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 
@@ -42,8 +43,38 @@ if (invalidDashboard.status !== 400) throw new Error("Built Worker dashboard val
 
 const health = await requestBuiltWorker("/api/health");
 const healthBody = await health.json();
-if (health.status !== 200 || healthBody.status !== "ok") {
+if (
+  health.status !== 200 ||
+  healthBody.status !== "ok" ||
+  healthBody.mode !== "demo" ||
+  healthBody.dataSource !== "demo" ||
+  healthBody.schemaVersion !== 0 ||
+  healthBody.readOnly !== true
+) {
   throw new Error("Built Worker health API smoke test failed");
+}
+
+async function listArtifactFiles(directory) {
+  const entries = await readdir(directory, { withFileTypes: true });
+  const nested = await Promise.all(
+    entries.map((entry) => {
+      const target = path.join(directory, entry.name);
+      return entry.isDirectory() ? listArtifactFiles(target) : [target];
+    }),
+  );
+  return nested.flat();
+}
+
+const forbiddenAbsolutePaths = [projectRoot, homedir()].flatMap((value) => [
+  value,
+  value.replaceAll("\\", "/"),
+]);
+for (const file of await listArtifactFiles(path.join(projectRoot, "dist"))) {
+  if (!/\.(?:css|html|js|json|map)$/i.test(file)) continue;
+  const content = await readFile(file, "utf8");
+  if (forbiddenAbsolutePaths.some((value) => content.includes(value))) {
+    throw new Error(`Built artifact leaks a local absolute path: ${path.relative(projectRoot, file)}`);
+  }
 }
 
 console.log("Validated Sites artifact and smoke-tested /, /api/dashboard, and /api/health.");

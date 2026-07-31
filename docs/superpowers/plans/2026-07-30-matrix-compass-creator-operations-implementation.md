@@ -46,7 +46,8 @@
 
 ```text
 data/
-  d1-state/
+  .wrangler/
+    state/
   backups/
   imports/
   logs/

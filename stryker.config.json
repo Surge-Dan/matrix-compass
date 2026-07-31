@@ -4,7 +4,13 @@
   "plugins": ["@stryker-mutator/vitest-runner"],
   "mutate": [
     "lib/dashboard-data.ts",
-    "lib/dashboard-format.ts"
+    "lib/dashboard-format.ts",
+    "app/api/health/route.ts",
+    "db/migrate.ts",
+    "lib/backup/manifest.ts",
+    "lib/runtime/data-dir.ts",
+    "lib/runtime/local-d1.ts",
+    "lib/runtime/mode.ts"
   ],
   "vitest": {
     "configFile": "vitest.config.ts",

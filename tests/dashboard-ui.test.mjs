@@ -138,8 +138,15 @@ test("production build and artifact validation are cross-platform", async () => 
   assert.equal(packageJson.scripts.build, "node scripts/build-verified.mjs");
   assert.equal(packageJson.scripts["validate:artifact"], "node scripts/validate-artifact.mjs");
   assert.match(packageJson.scripts["test:unit"], /--import tsx --test/);
-  assert.equal(packageJson.scripts.test, "npm run test:quality");
+  assert.equal(packageJson.scripts.test, "npm run test:release");
+  assert.equal(
+    packageJson.scripts["dev:demo"],
+    "node --import tsx scripts/demo-runtime.ts",
+  );
   for (const gate of ["build", "lint", "typecheck", "test:unit", "test:coverage", "test:gherkin", "test:e2e"]) {
     assert.match(packageJson.scripts["test:quality"], new RegExp(`npm run ${gate.replace(":", "\\:")}`));
+  }
+  for (const gate of ["test:quality", "test:mutation", "test:security"]) {
+    assert.match(packageJson.scripts["test:release"], new RegExp(`npm run ${gate.replace(":", "\\:")}`));
   }
 });

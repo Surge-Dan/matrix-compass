@@ -9,7 +9,7 @@ import {
   createDashboardResponse,
   GET as getDashboard,
 } from "../../app/api/dashboard/route";
-import { GET as getHealth } from "../../app/api/health/route";
+import { createConfiguredHealthResponse } from "../../app/api/health/route";
 
 describe("dashboard range", () => {
   it("defaults missing values to 30", () => {
@@ -147,7 +147,7 @@ describe("API routes", () => {
     );
     expect(response.status).toBe(200);
     expect(response.headers.get("cache-control")).toBe("no-store");
-    const body = await response.json();
+    const body = (await response.json()) as ReturnType<typeof getDashboardData>;
     expect(body.meta.range).toBe(7);
     expect(body.meta.requestId).toMatch(/^mc-/);
   });
@@ -157,7 +157,8 @@ describe("API routes", () => {
       new Request("http://localhost/api/dashboard"),
       "mc-default",
     );
-    expect((await response.json()).meta.range).toBe(30);
+    const body = (await response.json()) as ReturnType<typeof getDashboardData>;
+    expect(body.meta.range).toBe(30);
   });
 
   it("returns a traceable validation problem", async () => {
@@ -194,13 +195,19 @@ describe("API routes", () => {
   });
 
   it("returns a stable health contract", async () => {
-    const response = await getHealth();
+    const response = await createConfiguredHealthResponse(
+      async () => ({ MATRIX_COMPASS_MODE: "demo" }),
+      "development",
+    );
     expect(response.headers.get("cache-control")).toBe("no-store");
     expect(await response.json()).toEqual({
       status: "ok",
       app: "matrix-compass",
       version: "0.1.0",
+      mode: "demo",
       dataSource: "demo",
+      schemaVersion: 0,
+      readOnly: true,
     });
   });
 });

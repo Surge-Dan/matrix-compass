@@ -1,0 +1,21 @@
+{
+  "entries": [
+    {
+      "advisory": "GHSA-mh99-v99m-4gvg",
+      "severity": "high",
+      "expiresOn": "2026-08-15",
+      "scope": "Development-only ESLint glob expansion; all patterns are repository-controlled and no untrusted glob input is accepted.",
+      "packages": [
+        "@eslint/config-array",
+        "@eslint/eslintrc",
+        "brace-expansion",
+        "eslint",
+        "eslint-config-next",
+        "eslint-plugin-import",
+        "eslint-plugin-jsx-a11y",
+        "eslint-plugin-react",
+        "minimatch"
+      ]
+    }
+  ]
+}

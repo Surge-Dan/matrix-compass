@@ -30,6 +30,7 @@ export default defineConfig({
   ],
   webServer: {
     command: `"${process.execPath}" node_modules/vite/bin/vite.js --host 127.0.0.1 --port ${port}`,
+    env: { MATRIX_COMPASS_MODE: "demo", MATRIX_COMPASS_LAN: "false" },
     url: `http://127.0.0.1:${port}`,
     reuseExistingServer: false,
     timeout: 60_000,
