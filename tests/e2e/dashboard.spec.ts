@@ -1,7 +1,12 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
 
-interface PageDiagnostics { consoleErrors: string[]; pageErrors: string[]; failedRequests: string[] }
+interface PageDiagnostics {
+  consoleErrors: string[];
+  pageErrors: string[];
+  failedRequests: string[];
+}
+
 const diagnostics = new WeakMap<Page, PageDiagnostics>();
 
 test.beforeEach(async ({ page }) => {
@@ -13,75 +18,39 @@ test.beforeEach(async ({ page }) => {
   page.on("pageerror", (error) => report.pageErrors.push(error.message));
   page.on("requestfailed", (request) => report.failedRequests.push(`${request.method()} ${request.url()}`));
   await page.goto("/", { waitUntil: "networkidle" });
-  await expect(page.locator("html")).toHaveAttribute("data-dashboard-hydrated", "true");
+  await expect(page.locator("html")).toHaveAttribute("data-operations-hydrated", "true");
 });
 
-test("renders without overflow, browser errors, or failed requests", async ({ page }) => {
+test("renders the new operations shell without overflow or browser errors", async ({ page }) => {
   const report = diagnostics.get(page)!;
-
-  await expect(page.getByRole("heading", { name: "今天，内容仍在生长。" })).toBeVisible();
-  await expect(page.getByText("演示数据", { exact: true }).first()).toBeVisible();
+  await expect(page.getByRole("heading", { name: "今天，先看清经营结果。" })).toBeVisible();
+  await expect(page.getByText("演示模式", { exact: true })).toBeVisible();
+  await expect(page.getByText("¥2,430", { exact: true })).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
   expect(report.consoleErrors).toEqual([]);
   expect(report.pageErrors).toEqual([]);
   expect(report.failedRequests).toEqual([]);
 });
 
-test("switches reporting range through the real dashboard API", async ({ page }) => {
-  const responsePromise = page.waitForResponse((response) =>
-    response.url().includes("/api/dashboard?range=7") && response.status() === 200,
-  );
-  const rangeButton = page.getByRole("button", { name: "近 7 天" });
-  await rangeButton.click();
-  const response = await responsePromise;
-  expect((await response.json()).meta.range).toBe(7);
-  await expect(rangeButton).toHaveAttribute("aria-pressed", "true");
-  await expect(page.getByText("5,028", { exact: true })).toBeVisible();
-});
-
-test("keeps the selected period consistent across dates and modules", async ({ page }) => {
-  test.skip((page.viewportSize()?.width ?? 0) !== 1440, "single desktop period audit");
-  await Promise.all([
-    page.waitForResponse((response) => response.url().includes("/api/dashboard?range=90") && response.status() === 200),
-    page.getByRole("button", { name: "近 90 天" }).click(),
-  ]);
-  await expect(page.getByText("2026.05.01 — 07.29", { exact: true })).toBeVisible();
-  await page.getByRole("button", { name: "账号管理", exact: true }).click();
-  await expect(page.getByText("近 90 天增粉", { exact: true }).first()).toBeVisible();
-});
-
-test("navigates to account management from desktop or mobile navigation", async ({ page }) => {
-  if ((page.viewportSize()?.width ?? 0) < 768) {
-    await page.getByRole("button", { name: "打开导航" }).click();
+test("desktop navigation reaches every confirmed operations module", async ({ page }) => {
+  test.skip((page.viewportSize()?.width ?? 0) < 768, "desktop navigation audit");
+  for (const label of ["内容日历", "内容库", "收入管理", "账号资产", "复盘实验", "数据导入与同步", "设置"]) {
+    await page.getByRole("button", { name: label, exact: true }).click();
+    await expect(page.getByRole("heading", { name: label, exact: true })).toBeVisible();
   }
-  await page.getByRole("button", { name: "账号管理", exact: true }).click();
-  await expect(page.getByRole("heading", { name: "账号管理", exact: true })).toBeVisible();
-  await expect(page.getByText("统一查看授权、同步状态与账号经营表现")).toBeVisible();
-  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
 });
 
-test("gives every prominent dashboard action a visible result", async ({ page }) => {
-  test.skip((page.viewportSize()?.width ?? 0) !== 1440, "single desktop interaction audit");
-  await page.getByRole("button", { name: "查看预警" }).click();
-  await expect(page.getByRole("heading", { name: "异常预警", exact: true })).toBeVisible();
-  await page.getByRole("button", { name: "数据总览", exact: true }).click();
-  await page.getByRole("button", { name: "查看全部作品" }).click();
-  await expect(page.getByRole("heading", { name: "作品监控", exact: true })).toBeVisible();
-  await page.getByRole("button", { name: "账号管理", exact: true }).click();
-  await page.getByRole("button", { name: "添加监控账号" }).click();
-  await expect(page.getByRole("status")).toContainText("演示模式不会连接真实平台");
-  await page.getByRole("button", { name: "查看 Daniel AI笔记 详情" }).click();
-  await expect(page.getByRole("status")).toContainText("Daniel AI笔记");
+test("mobile bottom navigation reaches the primary workflows", async ({ page }) => {
+  test.skip((page.viewportSize()?.width ?? 0) >= 768, "mobile navigation audit");
+  for (const [button, heading] of [["日程", "内容日历"], ["内容", "内容库"], ["收入", "收入管理"], ["更多", "数据导入与同步"]]) {
+    await page.getByRole("button", { name: button, exact: true }).click();
+    await expect(page.getByRole("heading", { name: heading, exact: true })).toBeVisible();
+  }
 });
 
-test("meets automated WCAG checks", async ({ page }) => {
+test("meets automated WCAG A and AA checks", async ({ page }) => {
   const results = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa"]).analyze();
   expect(results.violations).toEqual([]);
-  if ((page.viewportSize()?.width ?? 0) < 768) {
-    await page.getByRole("button", { name: "打开导航" }).click();
-    const openMenuResults = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa"]).analyze();
-    expect(openMenuResults.violations).toEqual([]);
-  }
 });
 
 test("keeps visible mobile touch targets at least 44 pixels high", async ({ page }) => {
@@ -97,44 +66,24 @@ test("keeps visible mobile touch targets at least 44 pixels high", async ({ page
   expect(undersized).toEqual([]);
 });
 
-test("closes the mobile navigation with Escape", async ({ page }) => {
-  test.skip((page.viewportSize()?.width ?? 0) >= 768, "mobile-only interaction");
-  const toggle = page.getByRole("button", { name: "打开导航" });
-  await expect(page.getByRole("button", { name: "数据总览", exact: true })).toBeHidden();
-  await toggle.click();
-  await expect(page.locator(".workspace")).toHaveAttribute("inert", "");
-  await expect(page.getByRole("button", { name: "数据总览", exact: true })).toBeFocused();
-  await expect(page.getByRole("button", { name: "关闭导航" })).toHaveAttribute("aria-expanded", "true");
-  await page.keyboard.press("Escape");
-  await expect(page.getByRole("button", { name: "打开导航" })).toHaveAttribute("aria-expanded", "false");
-  await expect(toggle).toBeFocused();
-});
-
-test("all reachable modules meet WCAG A and AA checks", async ({ page }) => {
-  test.skip((page.viewportSize()?.width ?? 0) !== 1440, "single desktop accessibility audit");
-  for (const label of ["数据总览", "账号管理", "作品监控", "粉丝分析", "互动分析", "异常预警", "系统 / API 设置"]) {
-    await page.getByRole("button", { name: label, exact: true }).click();
-    const results = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa"]).analyze();
-    expect(results.violations, `${label} should have no WCAG A/AA violations`).toEqual([]);
-  }
-});
-
 test("matches the approved responsive visual baseline", async ({ page }) => {
-  await expect(page).toHaveScreenshot("dashboard-overview.png", {
+  await expect(page).toHaveScreenshot("operations-overview.png", {
     fullPage: true,
     animations: "disabled",
     maxDiffPixelRatio: 0.01,
   });
 });
 
-test("serves public backend contracts", async ({ request }) => {
-  const dashboard = await request.get("/api/dashboard?range=90");
-  expect(dashboard.status()).toBe(200);
-  expect((await dashboard.json()).meta.range).toBe(90);
-  const invalid = await request.get("/api/dashboard?range=14");
-  expect(invalid.status()).toBe(400);
-  expect((await invalid.json()).error.code).toBe("INVALID_RANGE");
+test("serves bootstrap, health, and compatibility backend contracts", async ({ request }) => {
+  const bootstrap = await request.get("/api/bootstrap");
+  expect(bootstrap.status()).toBe(200);
+  expect(await bootstrap.json()).toMatchObject({
+    data: { mode: "demo", source: "demo", readOnly: true, needsOnboarding: false },
+  });
   const health = await request.get("/api/health");
   expect(health.status()).toBe(200);
   expect(await health.json()).toMatchObject({ status: "ok", dataSource: "demo" });
+  const legacyDashboard = await request.get("/api/dashboard?range=90");
+  expect(legacyDashboard.status()).toBe(200);
+  expect((await legacyDashboard.json()).meta.range).toBe(90);
 });

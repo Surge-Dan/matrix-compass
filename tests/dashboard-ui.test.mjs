@@ -126,8 +126,8 @@ test("responsive CSS supports phone layouts without the former fixed minimum wid
 
 test("root metadata identifies the Chinese Matrix Compass product", async () => {
   const layout = await readFile(layoutUrl, "utf8");
-  assert.match(layout, /const title = "矩阵罗盘｜自媒体运营监控平台"/);
-  assert.match(layout, /const description = "跨平台自媒体账号经营监控与增长分析工作台。"/);
+  assert.match(layout, /const title = "矩阵罗盘｜创作者经营实验室"/);
+  assert.match(layout, /const description = "本地优先的内容、日程、收入与经营复盘工作台。"/);
   assert.match(layout, /openGraph:/);
   assert.match(layout, /\/og\.png/);
   assert.match(layout, /<html lang="zh-CN">/);
@@ -135,6 +135,7 @@ test("root metadata identifies the Chinese Matrix Compass product", async () => 
 
 test("production build and artifact validation are cross-platform", async () => {
   const packageJson = JSON.parse(await readFile(packageUrl, "utf8"));
+  const artifactValidator = await readFile(new URL("../scripts/validate-artifact.mjs", import.meta.url), "utf8");
   assert.equal(packageJson.scripts.build, "node scripts/build-verified.mjs");
   assert.equal(packageJson.scripts["validate:artifact"], "node scripts/validate-artifact.mjs");
   assert.match(packageJson.scripts["test:unit"], /--import tsx --test/);
@@ -149,4 +150,5 @@ test("production build and artifact validation are cross-platform", async () => 
   for (const gate of ["test:quality", "test:mutation", "test:security"]) {
     assert.match(packageJson.scripts["test:release"], new RegExp(`npm run ${gate.replace(":", "\\:")}`));
   }
+  assert.match(artifactValidator, /requestBuiltWorker\("\/api\/bootstrap"\)/);
 });

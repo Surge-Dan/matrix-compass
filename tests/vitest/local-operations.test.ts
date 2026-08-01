@@ -49,12 +49,38 @@ describe("local operations CLI", () => {
 
       try {
         await runNode(
+          [
+            "node_modules/wrangler/bin/wrangler.js",
+            "d1",
+            "execute",
+            "matrix-compass-local",
+            "--local",
+            "--persist-to",
+            paths.d1State,
+            "--config",
+            "wrangler.local.jsonc",
+            "--file",
+            "db/migrations/0001_initial.sql",
+            "--yes",
+          ],
+          environment,
+        );
+        await runNode(
           ["--import", "tsx", "scripts/local-runtime.ts", "--migrate-only"],
           environment,
         );
+        const migrationBackupNames = (await readdir(paths.backups)).filter(
+          (name) => !name.startsWith("."),
+        );
+        expect(migrationBackupNames).toHaveLength(1);
+        const migrationManifest = JSON.parse(
+          await readFile(path.join(paths.backups, migrationBackupNames[0], "manifest.json"), "utf8"),
+        ) as BackupManifest;
+        expect(migrationManifest.schemaVersion).toBe(1);
+        expect(migrationManifest.recordCounts).toEqual({ accounts: 0, contents: 0 });
         await expect(
           runNode(["--import", "tsx", "scripts/check-local.ts"], environment),
-        ).resolves.toMatchObject({ stdout: expect.stringContaining("schema v1") });
+        ).resolves.toMatchObject({ stdout: expect.stringContaining("schema v2") });
         await runNode(
           [
             "node_modules/wrangler/bin/wrangler.js",
@@ -80,8 +106,11 @@ describe("local operations CLI", () => {
         const backupNames = (await readdir(paths.backups)).filter(
           (name) => !name.startsWith("."),
         );
-        expect(backupNames).toHaveLength(1);
-        const backupDirectory = path.join(paths.backups, backupNames[0]);
+        expect(backupNames).toHaveLength(2);
+        const backupDirectory = path.join(
+          paths.backups,
+          backupNames.find((name) => name !== migrationBackupNames[0])!,
+        );
         const manifest = JSON.parse(
           await readFile(path.join(backupDirectory, "manifest.json"), "utf8"),
         ) as BackupManifest;

@@ -32,6 +32,18 @@ if (home.status !== 200 || !(await home.text()).includes("矩阵罗盘")) {
   throw new Error("Built Worker homepage smoke test failed");
 }
 
+const bootstrap = await requestBuiltWorker("/api/bootstrap");
+const bootstrapBody = await bootstrap.json();
+if (
+  bootstrap.status !== 200 ||
+  bootstrapBody.data?.mode !== "demo" ||
+  bootstrapBody.data?.source !== "demo" ||
+  bootstrapBody.data?.readOnly !== true ||
+  bootstrapBody.data?.needsOnboarding !== false
+) {
+  throw new Error("Built Worker bootstrap API smoke test failed");
+}
+
 const dashboard = await requestBuiltWorker("/api/dashboard?range=7");
 const dashboardBody = await dashboard.json();
 if (dashboard.status !== 200 || dashboardBody.meta?.range !== 7) {
@@ -77,4 +89,4 @@ for (const file of await listArtifactFiles(path.join(projectRoot, "dist"))) {
   }
 }
 
-console.log("Validated Sites artifact and smoke-tested /, /api/dashboard, and /api/health.");
+console.log("Validated Sites artifact and smoke-tested /, /api/bootstrap, /api/dashboard, and /api/health.");

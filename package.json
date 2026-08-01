@@ -13,7 +13,7 @@
     "build": "node scripts/build-verified.mjs",
     "start": "node --import tsx scripts/local-runtime.ts",
     "test": "npm run test:release",
-    "test:unit": "node --import tsx --test tests/dashboard-contract.test.mjs tests/dashboard-ui.test.mjs",
+    "test:unit": "node --import tsx --test tests/dashboard-contract.test.mjs tests/dashboard-ui.test.mjs tests/operations-ui.test.mjs",
     "test:skill": "node --test tests/skill-runtime.test.mjs",
     "test:coverage": "vitest run --coverage",
     "test:gherkin": "node --import tsx node_modules/@cucumber/cucumber/bin/cucumber.js --import tests/cucumber/dashboard.steps.mjs",

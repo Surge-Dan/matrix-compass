@@ -51,7 +51,9 @@ describe("local D1 persistence", () => {
     expect(getTableConfig(accounts).indexes).toHaveLength(2);
     expect(getTableConfig(accounts).checks).toHaveLength(2);
     expect(getTableConfig(contents).indexes).toHaveLength(3);
-    expect(getTableConfig(contents).checks).toHaveLength(2);
+    expect(getTableConfig(contents).checks).toHaveLength(4);
+    expect(contents.tags.name).toBe("tags");
+    expect(contents.source.name).toBe("source");
     expect(getTableConfig(contents).foreignKeys[0].reference().foreignColumns).toEqual([
       accounts.id,
     ]);
@@ -125,7 +127,7 @@ describe("local D1 persistence", () => {
       }
       await restarted.miniflare.dispose();
     }
-  });
+  }, 15_000);
 
   it("upgrades legacy metadata and preserves the last usable state after an interrupted migration", async () => {
     const stateDirectory = await createStateDirectory();

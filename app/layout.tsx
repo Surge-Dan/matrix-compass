@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import { headers } from "next/headers";
 import "./globals.css";
 
-const title = "矩阵罗盘｜自媒体运营监控平台";
-const description = "跨平台自媒体账号经营监控与增长分析工作台。";
+const title = "矩阵罗盘｜创作者经营实验室";
+const description = "本地优先的内容、日程、收入与经营复盘工作台。";
 
 export async function generateMetadata(): Promise<Metadata> {
   const requestHeaders = await headers();
@@ -21,7 +21,7 @@ export async function generateMetadata(): Promise<Metadata> {
       locale: "zh_CN",
       title,
       description,
-      images: [{ url: imageUrl, width: 1792, height: 920, alt: "矩阵罗盘自媒体运营监控平台" }],
+      images: [{ url: imageUrl, width: 1792, height: 920, alt: "矩阵罗盘创作者经营实验室" }],
     },
     twitter: { card: "summary_large_image", title, description, images: [imageUrl] },
   };

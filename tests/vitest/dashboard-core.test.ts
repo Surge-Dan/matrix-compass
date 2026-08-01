@@ -6,8 +6,8 @@ import {
 } from "../../lib/dashboard-data";
 import { formatChange, formatDashboardPeriod, formatMetricValue } from "../../lib/dashboard-format";
 import {
+  createConfiguredDashboardResponse,
   createDashboardResponse,
-  GET as getDashboard,
 } from "../../app/api/dashboard/route";
 import { createConfiguredHealthResponse } from "../../app/api/health/route";
 
@@ -142,8 +142,11 @@ describe("metric formatting", () => {
 
 describe("API routes", () => {
   it("returns dashboard data with a request id", async () => {
-    const response = await getDashboard(
+    const response = await createConfiguredDashboardResponse(
       new Request("http://localhost/api/dashboard?range=7"),
+      async () => ({ MATRIX_COMPASS_MODE: "demo", MATRIX_COMPASS_LAN: "false" }),
+      "production",
+      "mc-configured-dashboard",
     );
     expect(response.status).toBe(200);
     expect(response.headers.get("cache-control")).toBe("no-store");
@@ -167,6 +170,7 @@ describe("API routes", () => {
       "mc-invalid",
     );
     expect(response.status).toBe(400);
+    expect(response.headers.get("cache-control")).toBe("no-store");
     expect(await response.json()).toEqual({
       error: {
         code: "INVALID_RANGE",
@@ -185,6 +189,7 @@ describe("API routes", () => {
       },
     );
     expect(response.status).toBe(500);
+    expect(response.headers.get("cache-control")).toBe("no-store");
     expect(await response.json()).toEqual({
       error: {
         code: "DASHBOARD_UNAVAILABLE",

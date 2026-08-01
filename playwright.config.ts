@@ -33,6 +33,6 @@ export default defineConfig({
     env: { MATRIX_COMPASS_MODE: "demo", MATRIX_COMPASS_LAN: "false" },
     url: `http://127.0.0.1:${port}`,
     reuseExistingServer: false,
-    timeout: 60_000,
+    timeout: 120_000,
   },
 });

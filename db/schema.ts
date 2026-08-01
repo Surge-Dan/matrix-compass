@@ -59,10 +59,10 @@ export const contents = sqliteTable(
     accountId: text("account_id")
       .notNull()
       .references(() => accounts.id, { onDelete: "restrict", onUpdate: "cascade" }),
-    contentType: text("content_type").notNull(),
+    contentType: text("content_type"),
     format: text("format"),
     stage: text("stage").notNull(),
-    plannedAt: text("planned_at").notNull(),
+    plannedAt: text("planned_at"),
     publishedAt: text("published_at"),
     url: text("url"),
     audience: text("audience"),
@@ -74,6 +74,8 @@ export const contents = sqliteTable(
     successThreshold: text("success_threshold"),
     hookPattern: text("hook_pattern"),
     ctaPattern: text("cta_pattern"),
+    tags: text("tags", { mode: "json" }).$type<string[]>(),
+    source: text("source").notNull().default("manual"),
     legacyReviewNote: text("legacy_review_note"),
     deletedAt: text("deleted_at"),
     ...timestampsAndVersion,
@@ -85,6 +87,14 @@ export const contents = sqliteTable(
       .on(table.accountId, table.externalId)
       .where(sql`${table.externalId} IS NOT NULL`),
     check("contents_title_not_blank", sql`length(trim(${table.title})) > 0`),
+    check(
+      "contents_date_required",
+      sql`${table.plannedAt} IS NOT NULL OR ${table.publishedAt} IS NOT NULL`,
+    ),
+    check(
+      "contents_published_at_required",
+      sql`${table.stage} <> 'published' OR ${table.publishedAt} IS NOT NULL OR (${table.source} = 'legacy-v1' AND ${table.legacyReviewNote} IS NOT NULL)`,
+    ),
     check("contents_version_positive", sql`${table.version} >= 1`),
   ],
 );

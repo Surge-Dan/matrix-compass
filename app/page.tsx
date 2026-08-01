@@ -1,6 +1,5 @@
-import { DashboardApp } from "../components/dashboard/dashboard-app";
-import { getDashboardData } from "../lib/dashboard-data";
+import { OperationsApp } from "../components/app/operations-app";
 
 export default function Home() {
-  return <DashboardApp initialData={getDashboardData(30, "mc-initial-render")} />;
+  return <OperationsApp />;
 }

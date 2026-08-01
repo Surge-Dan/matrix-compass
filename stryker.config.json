@@ -2,12 +2,28 @@
   "$schema": "./node_modules/@stryker-mutator/core/schema/stryker-schema.json",
   "testRunner": "vitest",
   "plugins": ["@stryker-mutator/vitest-runner"],
+  "ignorePatterns": [
+    "/.sites-runtime/**",
+    "/.vinext/**",
+    "/.wrangler/**",
+    "/build/**",
+    "/coverage/**",
+    "/dist/**",
+    "/test-results/**"
+  ],
   "mutate": [
     "lib/dashboard-data.ts",
     "lib/dashboard-format.ts",
+    "app/api/bootstrap/route.ts",
+    "app/api/dashboard/route.ts",
     "app/api/health/route.ts",
     "db/migrate.ts",
     "lib/backup/manifest.ts",
+    "lib/application/get-bootstrap.ts",
+    "lib/domain/account.ts",
+    "lib/domain/content.ts",
+    "lib/repositories/accounts.ts",
+    "lib/repositories/contents.ts",
     "lib/runtime/data-dir.ts",
     "lib/runtime/local-d1.ts",
     "lib/runtime/mode.ts"
