@@ -34,15 +34,18 @@ describe("Matrix Compass local skill", () => {
     expect(script).not.toMatch(/Get-ChildItem\s+Env:/i);
   });
 
-  it("keeps the chosen data directory and doctor checks explicit", async () => {
+  it("keeps the chosen data directory and shared runtime checks explicit", async () => {
+    const common = await read(path.join("scripts", "common.ps1"));
     const install = await read(path.join("scripts", "install.ps1"));
     const start = await read(path.join("scripts", "start.ps1"));
     const doctor = await read(path.join("scripts", "doctor.ps1"));
     expect(install).toContain("[string]$DataPath");
-    expect(install).toContain("npm run db:migrate");
+    expect(common).toContain("Initialize-MatrixCompassRuntime");
+    expect(common).toContain("Invoke-MatrixCompassNpm");
+    expect(install).toContain('Invoke-MatrixCompassNpm -Runtime $runtime -Arguments @("run", "db:migrate")');
     expect(start).toContain("Set-MatrixCompassDataPath");
     expect(doctor).toContain("NodeCompatible");
-    expect(doctor).toContain("npm run db:check");
+    expect(doctor).toContain('Invoke-MatrixCompassNpm -Runtime $runtime -Arguments @("run", "db:check")');
     expect(doctor).toContain("/api/health");
   });
 

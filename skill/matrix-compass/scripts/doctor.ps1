@@ -8,21 +8,20 @@ param(
 $ErrorActionPreference = "Stop"
 . (Join-Path $PSScriptRoot "common.ps1")
 $resolvedProject = (Resolve-Path -LiteralPath $ProjectPath).Path
+$runtime = Initialize-MatrixCompassRuntime
+Write-MatrixCompassRuntimeSummary -Runtime $runtime
 $checks = [ordered]@{
   Git = [bool](Get-Command git -ErrorAction SilentlyContinue)
-  Node = [bool](Get-Command node -ErrorAction SilentlyContinue)
-  Npm = [bool](Get-Command npm -ErrorAction SilentlyContinue)
+  Node = $true
+  NodePath = $runtime.NodePath
+  NodeVersion = $runtime.NodeVersion
+  NodeCompatible = $true
+  Npm = $true
+  NpmCliPath = $runtime.NpmCliPath
   Package = Test-Path -LiteralPath (Join-Path $resolvedProject "package.json")
   Lockfile = Test-Path -LiteralPath (Join-Path $resolvedProject "package-lock.json")
   WranglerConfig = Test-Path -LiteralPath (Join-Path $resolvedProject "wrangler.local.jsonc")
   Migration = Test-Path -LiteralPath (Join-Path $resolvedProject "db\migrations\0001_initial.sql")
-}
-if ($checks.Node) {
-  $nodeVersion = [version]((& node --version).TrimStart("v"))
-  $checks.NodeVersion = $nodeVersion
-  $checks.NodeCompatible = $nodeVersion -ge [version]"22.13.0"
-} else {
-  $checks.NodeCompatible = $false
 }
 $checks.DataPath = Set-MatrixCompassDataPath -DataPath $DataPath -ProjectPath $resolvedProject
 
@@ -31,7 +30,7 @@ $databaseHealthy = $false
 if ($coreHealthy) {
   Push-Location $resolvedProject
   try {
-    & npm run db:check
+    Invoke-MatrixCompassNpm -Runtime $runtime -Arguments @("run", "db:check")
     $databaseHealthy = $LASTEXITCODE -eq 0
   } finally {
     Pop-Location

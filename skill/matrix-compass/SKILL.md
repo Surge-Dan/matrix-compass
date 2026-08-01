@@ -18,6 +18,14 @@ compatibility: Windows PowerShell、Git、Node.js 22.13+、npm
 - 局域网模式仅用于可信 Wi-Fi，不建议做路由器公网映射。
 - 更新前先创建并验证备份，再检查 Git 工作区；存在未提交修改时停止并说明。
 
+## Node.js 运行时
+
+脚本会统一解析 Node.js 和 npm 运行时，保证版本检查、npm CLI 与 npm 子脚本使用同一个 Node.js 22.13+。解析器只调整当前脚本进程，不修改用户或系统 PATH。
+
+- 通常直接运行脚本，由解析器从 PATH、Windows 常见安装位置和 Codex 本地运行时中选择兼容版本。
+- 需要固定版本时，把 `MATRIX_COMPASS_NODE` 设置为 Node 可执行文件的绝对路径；配置无效或版本过低时脚本会停止，不会静默回退。
+- 找不到兼容 Node 或 npm CLI 时，先报告已检查的版本和路径，不要继续克隆、迁移、启动、备份或恢复。
+
 ## 安装
 
 1. 确认用户指定的是空目录；不要自行选择或覆盖已有项目。
@@ -27,7 +35,7 @@ compatibility: Windows PowerShell、Git、Node.js 22.13+、npm
    .\scripts\install.ps1 -TargetPath "C:\明确的安装目录" -DataPath "E:\CreatorData"
    ```
 
-3. 安装完成后运行 `doctor.ps1`。
+3. 安装输出必须显示实际选择的 Node 路径和版本；安装完成后运行 `doctor.ps1`。
 4. 首次启动使用 `start.ps1`，确认 `/api/health` 返回 `status: ok` 和 `dataSource: local-d1`。
 
 ## 启动
