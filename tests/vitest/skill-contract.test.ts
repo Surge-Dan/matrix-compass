@@ -18,16 +18,9 @@ describe("Matrix Compass local skill", () => {
     expect(markdown).toContain("公网演示不读取本地数据");
   });
 
-  it.each([
-    "common.ps1",
-    "install.ps1",
-    "start.ps1",
-    "backup.ps1",
-    "restore.ps1",
-    "doctor.ps1",
-  ])("bundles the deterministic %s workflow", async (scriptName) => {
+  it.each(["common.ps1", "install.ps1", "start.ps1", "backup.ps1", "restore.ps1", "doctor.ps1"])("bundles the deterministic %s workflow", async (scriptName) => {
     const script = await read(path.join("scripts", scriptName));
-    expect(script).toContain("$ErrorActionPreference = \"Stop\"");
+    expect(script).toContain('$ErrorActionPreference = "Stop"');
     expect(script).toMatch(/^[\x00-\x7F]*$/);
     expect(script).not.toMatch(/Remove-Item\s+.*-Recurse/i);
     expect(script).not.toMatch(/git\s+(?:reset\s+--hard|clean\s+-fd)/i);
@@ -50,10 +43,7 @@ describe("Matrix Compass local skill", () => {
   });
 
   it("ships realistic review prompts for install, backup, and diagnosis", async () => {
-    const evals = JSON.parse(await read(path.join("evals", "evals.json"))) as {
-      skill_name: string;
-      evals: Array<{ id: number; expectations: string[] }>;
-    };
+    const evals = JSON.parse(await read(path.join("evals", "evals.json"))) as { skill_name: string; evals: Array<{ id: number; expectations: string[] }> };
     expect(evals.skill_name).toBe("matrix-compass");
     expect(evals.evals.map((item) => item.id)).toEqual([1, 2, 3]);
     expect(evals.evals.every((item) => item.expectations.length >= 3)).toBe(true);

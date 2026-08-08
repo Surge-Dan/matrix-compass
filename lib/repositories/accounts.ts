@@ -8,6 +8,12 @@ export interface AccountRecord {
   status: AccountStatus;
   createdAt: string;
   updatedAt: string;
+  positioning?: string | null;
+  cadence?: string | null;
+  topicDirections?: string[] | null;
+  monetizationPaths?: string[] | null;
+  currentFollowers?: number | null;
+  importBatchId?: string | null;
 }
 
 interface StoredAccountRow {
@@ -53,6 +59,9 @@ export function createAccountRepository(database: DatabaseClient) {
           account.updatedAt,
         )
         .run();
+      if (account.importBatchId) {
+        await database.prepare("UPDATE accounts SET import_batch_id = ? WHERE id = ?").bind(account.importBatchId, account.id).run();
+      }
       return account;
     },
 
@@ -74,6 +83,25 @@ export function createAccountRepository(database: DatabaseClient) {
         .bind(id)
         .first<StoredAccountRow>();
       return row ? toAccount(row) : null;
+    },
+
+    async list() {
+      const result = await database.prepare("SELECT id, platform, name, active, deleted_at AS deletedAt, created_at AS createdAt, updated_at AS updatedAt FROM accounts WHERE deleted_at IS NULL ORDER BY updated_at DESC").all<StoredAccountRow>();
+      return result.results.map(toAccount);
+    },
+
+    async findByPlatformName(platform: string, name: string) {
+      const row = await database.prepare("SELECT id, platform, name, active, deleted_at AS deletedAt, created_at AS createdAt, updated_at AS updatedAt FROM accounts WHERE platform = ? AND name = ? AND deleted_at IS NULL").bind(platform, name).first<StoredAccountRow>();
+      return row ? toAccount(row) : null;
+    },
+
+    async remove(id: string, updatedAt: string) {
+      await database.prepare("UPDATE accounts SET deleted_at = ?, active = 0, version = version + 1, updated_at = ? WHERE id = ? AND deleted_at IS NULL").bind(updatedAt, updatedAt, id).run();
+    },
+
+    async update(id: string, input: { name: string; platform: string; status: AccountStatus }, updatedAt: string) {
+      await database.prepare("UPDATE accounts SET name = ?, platform = ?, active = ?, deleted_at = ?, version = version + 1, updated_at = ? WHERE id = ? AND deleted_at IS NULL").bind(input.name, input.platform, input.status === "active" ? 1 : 0, input.status === "archived" ? updatedAt : null, updatedAt, id).run();
+      return this.findById(id);
     },
   };
 }

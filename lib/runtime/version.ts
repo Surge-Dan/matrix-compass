@@ -1,2 +1,2 @@
 export const MATRIX_COMPASS_VERSION = "0.1.0";
-export const MATRIX_COMPASS_SCHEMA_VERSION = 2;
+export const MATRIX_COMPASS_SCHEMA_VERSION = 4;

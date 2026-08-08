@@ -53,6 +53,17 @@ describe("bootstrap query", () => {
     await miniflare.dispose();
   });
 
+  it("returns finance metrics after a real income entry exists", async () => {
+    const { miniflare, database } = await createTestDatabase();
+    await migrateToV2(database);
+    await database.prepare("INSERT INTO accounts (id, platform, name, active, version, created_at, updated_at) VALUES ('finance-account', 'wechat', 'Finance', 1, 1, '2026-08-01T00:00:00.000Z', '2026-08-01T00:00:00.000Z')").run();
+    await database.prepare("CREATE TABLE finance_entries (id TEXT PRIMARY KEY, direction TEXT NOT NULL, account_id TEXT NOT NULL, content_id TEXT, category TEXT NOT NULL, amount_minor INTEGER NOT NULL, currency TEXT NOT NULL, occurred_at TEXT NOT NULL, settlement_status TEXT NOT NULL, settled_amount_minor INTEGER NOT NULL, expected_settlement_at TEXT, settled_at TEXT, counterparty TEXT, review_highlight TEXT, review_problem TEXT, optimization_direction TEXT, note TEXT, source TEXT NOT NULL, deleted_at TEXT, version INTEGER NOT NULL, created_at TEXT NOT NULL, updated_at TEXT NOT NULL)").run();
+    await database.prepare("INSERT INTO finance_entries (id, direction, account_id, category, amount_minor, currency, occurred_at, settlement_status, settled_amount_minor, source, version, created_at, updated_at) VALUES ('finance-entry', 'income', 'finance-account', 'brand-deal', 12300, 'CNY', '2026-08-01T00:00:00.000Z', 'settled', 12300, 'manual', 1, '2026-08-01T00:00:00.000Z', '2026-08-01T00:00:00.000Z')").run();
+    const { getBootstrapData } = await import("../../lib/application/get-bootstrap");
+    await expect(getBootstrapData({ runtime: localRuntime, database })).resolves.toMatchObject({ metrics: { revenueMinor: 12300, settledMinor: 12300, pendingMinor: 0 } });
+    await miniflare.dispose();
+  });
+
   it("keeps demo data isolated and traceable in demo mode", async () => {
     const { getBootstrapData } = await import("../../lib/application/get-bootstrap");
     const demoProvider = vi.fn(() => ({
@@ -81,6 +92,26 @@ describe("bootstrap query", () => {
       actions: [],
     });
     expect(demoProvider).toHaveBeenCalledOnce();
+  });
+
+  it("normalizes partial finance summary fields from a compatible local binding", async () => {
+    const database: DatabaseClient = {
+      prepare(query: string) {
+        const statement: DatabaseStatement = {
+          bind() { return statement; },
+          async first<T>() {
+            if (query.includes("FROM accounts")) return { count: 1 } as T;
+            if (query.includes("FROM contents")) return { count: 1 } as T;
+            return { totalIncomeMinor: 0, totalExpenseMinor: 100 } as T;
+          },
+          async all<T>() { return { results: [] as T[] }; },
+          async run() { return { success: true }; },
+        };
+        return statement;
+      },
+    };
+    const { getBootstrapData } = await import("../../lib/application/get-bootstrap");
+    await expect(getBootstrapData({ runtime: localRuntime, database })).resolves.toMatchObject({ metrics: { revenueMinor: -100, settledMinor: 0, pendingMinor: 0 } });
   });
 
   it("does not request onboarding when imported content exists before account reconciliation", async () => {

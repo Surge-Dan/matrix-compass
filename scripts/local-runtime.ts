@@ -1,5 +1,4 @@
 import { spawn } from "node:child_process";
-import { readdir } from "node:fs/promises";
 import { homedir } from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -7,7 +6,7 @@ import {
   prepareDataDirectories,
   resolveDataDirectory,
 } from "../lib/runtime/data-dir";
-import { buildD1WranglerArgs } from "../lib/runtime/local-d1";
+import { applyLocalMigrations, readLocalSchemaVersion } from "../lib/runtime/local-sqlite";
 import { resolveRuntimeConfig } from "../lib/runtime/mode";
 import { MATRIX_COMPASS_SCHEMA_VERSION } from "../lib/runtime/version";
 
@@ -44,40 +43,6 @@ function run(command: string, args: string[], environment: NodeJS.ProcessEnv) {
   });
 }
 
-function runCaptured(command: string, args: string[], environment: NodeJS.ProcessEnv) {
-  return new Promise<string>((resolve, reject) => {
-    const child = spawn(command, args, {
-      cwd: repositoryRoot,
-      env: environment,
-      stdio: ["ignore", "pipe", "inherit"],
-      windowsHide: true,
-    });
-    let output = "";
-    child.stdout.setEncoding("utf8");
-    child.stdout.on("data", (chunk: string) => { output += chunk; });
-    child.once("error", reject);
-    child.once("exit", (code, signal) => {
-      if (code === 0) resolve(output);
-      else reject(new Error(`子进程退出：${signal ?? code ?? "unknown"}`));
-    });
-  });
-}
-
-async function readExistingSchemaVersion(d1State: string, environment: NodeJS.ProcessEnv) {
-  const entries = await readdir(d1State, { recursive: true }).catch(() => [] as string[]);
-  if (!entries.some((entry) => entry.endsWith(".sqlite"))) return null;
-  const output = await runCaptured(process.execPath, [
-    wranglerEntry,
-    "d1", "execute", "matrix-compass-local", "--local", "--persist-to", d1State,
-    "--config", wranglerConfig,
-    "--command", "SELECT schema_version AS schemaVersion FROM matrix_compass_meta WHERE id = 1;",
-    "--json",
-  ], environment);
-  const results = JSON.parse(output) as Array<{ success: boolean; results: Array<{ schemaVersion: number }> }>;
-  const version = results[0]?.results[0]?.schemaVersion;
-  return Number.isInteger(version) ? version : null;
-}
-
 async function main() {
   const lanEnabled = process.argv.includes("--lan");
   const migrateOnly = process.argv.includes("--migrate-only");
@@ -102,25 +67,23 @@ async function main() {
     MATRIX_COMPASS_DATA_DIR: paths.root,
   };
 
-  const existingSchemaVersion = await readExistingSchemaVersion(paths.d1State, environment);
+  const existingSchemaVersion = await readLocalSchemaVersion(paths.d1State);
   if (existingSchemaVersion !== null && existingSchemaVersion < MATRIX_COMPASS_SCHEMA_VERSION) {
     process.stdout.write(`检测到 schema v${existingSchemaVersion}，迁移前创建校验备份。\n`);
     await run(process.execPath, ["--import", "tsx", path.join(repositoryRoot, "scripts", "backup-local.ts")], environment);
   }
 
-  await run(
-    process.execPath,
-    [
-      wranglerEntry,
-      ...buildD1WranglerArgs("migrate", paths, wranglerConfig),
-    ],
+  await applyLocalMigrations({
+    repositoryRoot,
+    wranglerEntry,
+    configPath: wranglerConfig,
+    stateRoot: paths.d1State,
+    migrationsDirectory: path.join(repositoryRoot, "db", "migrations"),
     environment,
-  );
+  });
 
   if (migrateOnly) return;
-  process.stdout.write(
-    `Matrix Compass 本地模式：${runtime.host}:3000\n数据目录：${paths.root}\n`,
-  );
+  process.stdout.write(`Matrix Compass 本地模式：${runtime.host}:3000\n数据目录：${paths.root}\n`);
   await run(
     process.execPath,
     [viteEntry, "--host", runtime.host, "--port", "3000"],

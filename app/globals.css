@@ -290,3 +290,49 @@ button:focus-visible, a:focus-visible { outline:3px solid rgba(200,93,61,.45); o
 @media (max-width:374px) {
   .operations-metrics { grid-template-columns:1fr; }
 }
+
+.module-panel { display:grid; gap:18px; }
+.module-header { display:flex; justify-content:space-between; gap:22px; align-items:flex-start; }
+.module-header h1 { margin:0; font:500 clamp(28px,4vw,42px)/1.2 "Songti SC",serif; }
+.module-header p:last-child { margin:10px 0 0; color:var(--muted); font-size:12px; line-height:1.7; }
+.module-form { display:flex; flex-wrap:wrap; gap:10px; align-items:center; padding:14px; border:1px solid var(--line); border-radius:14px; background:var(--surface); }
+.module-form input, .module-form select, .import-textarea { min-height:42px; padding:0 12px; border:1px solid var(--line); border-radius:9px; color:var(--ink); background:white; font-size:12px; }
+.module-form input:focus, .module-form select:focus, .import-textarea:focus { border-color:var(--coral); outline:2px solid rgba(157,66,45,.15); }
+.module-form .primary-action, .module-form .secondary-action { min-height:42px; }
+.secondary-action { min-height:42px; padding:0 15px; border:1px solid var(--line); border-radius:9px; background:white; cursor:pointer; }
+.module-error, .error-text { color:#9d422d; font-size:11px; }
+.module-subtitle { margin:1.5rem 0 .75rem; font-size:1.05rem; }
+.operations-live-summary { display:flex; gap:1rem; flex-wrap:wrap; align-items:center; margin:1rem 0; padding:.85rem 1rem; border:1px solid var(--line); border-radius:12px; background:#fffaf3; }
+.operations-live-summary span { color:var(--muted); }
+.module-table { overflow:hidden; border:1px solid var(--line); border-radius:14px; background:var(--surface); }
+.module-row { display:grid; grid-template-columns:minmax(0,1.5fr) repeat(3,minmax(80px,1fr)); gap:14px; align-items:center; min-height:58px; padding:10px 16px; border-bottom:1px solid var(--line); font-size:11px; }
+.module-row:last-child { border-bottom:0; }
+.module-row span { color:var(--muted); }
+.status-chip { width:max-content; padding:5px 8px; border-radius:999px; color:#405d47; background:var(--sage-soft); font-size:10px; }
+.module-empty { padding:34px 20px; color:var(--muted); text-align:center; font-size:12px; }
+.calendar-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; }
+.calendar-day { min-height:150px; padding:14px; border:1px solid var(--line); border-radius:13px; background:var(--surface); }
+.calendar-day>strong { display:block; margin-bottom:10px; font-size:12px; }
+.calendar-day article { display:grid; gap:4px; margin-top:7px; padding:9px; border-left:3px solid var(--coral); border-radius:6px; background:#f7eee8; }
+.calendar-day article b { font-size:11px; }
+.calendar-day article span { color:var(--muted); font-size:9px; }
+.finance-summary { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:12px; }
+.finance-summary article { display:grid; gap:12px; padding:18px; border:1px solid var(--line); border-radius:14px; background:var(--surface); }
+.finance-summary span { color:var(--muted); font-size:11px; }
+.finance-summary strong { font:500 24px/1 Georgia,serif; }
+.import-textarea { width:100%; min-height:180px; padding:14px; resize:vertical; font-family:ui-monospace,Consolas,monospace; line-height:1.6; }
+.import-preview { display:flex; flex-wrap:wrap; gap:12px; padding:13px 15px; border:1px solid var(--line); border-radius:12px; background:var(--surface); font-size:11px; }
+.success-text { color:var(--sage); }
+.import-preview p { width:100%; margin:0; color:var(--coral); }
+.settings-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:14px; }
+.settings-grid article { display:grid; gap:10px; padding:18px; border:1px solid var(--line); border-radius:14px; background:var(--surface); }
+.settings-grid span, .settings-grid small { color:var(--muted); font-size:10px; line-height:1.6; }
+.settings-grid strong { font-size:14px; }
+@media (max-width:767px) {
+  .module-header { display:block; }
+  .module-form { align-items:stretch; }
+  .module-form input, .module-form select, .module-form button { width:100%; }
+  .module-row { grid-template-columns:1fr 1fr; gap:6px 12px; }
+  .module-row strong { grid-column:1 / -1; }
+  .calendar-grid, .finance-summary, .settings-grid { grid-template-columns:1fr; }
+}

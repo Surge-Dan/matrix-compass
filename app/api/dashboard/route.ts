@@ -12,6 +12,7 @@ import { loadRuntimeEnvironment } from "../health/route";
 type RuntimeEnvironment = Record<string, string | undefined>;
 
 /* v8 ignore next 6 -- cloudflare:workers only resolves inside workerd */
+/* c8 ignore next 6 */
 // Stryker disable all: cloudflare:workers cannot resolve in the Node test runner
 async function loadWorkerBindings() {
   const { env } = await import("cloudflare:workers");
@@ -20,6 +21,7 @@ async function loadWorkerBindings() {
 // Stryker restore all
 
 /* v8 ignore next -- route entrypoint request correlation */
+/* c8 ignore next */
 // Stryker disable all: nondeterministic correlation is asserted through injected request ids
 function createRequestId() {
   return `mc-${crypto.randomUUID()}`;
@@ -121,6 +123,7 @@ export async function createConfiguredDashboardResponse(
 }
 
 /* v8 ignore next 5 -- route entrypoint reads bindings from workerd */
+/* c8 ignore next 5 */
 // Stryker disable all: framework entrypoint delegates to the fully tested configured response
 export async function GET(request: Request) {
   return createConfiguredDashboardResponse(

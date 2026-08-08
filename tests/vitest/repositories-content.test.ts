@@ -40,6 +40,12 @@ describe("content repository", () => {
       plannedAt: null,
     });
     await expect(contents.findById("missing")).resolves.toBeNull();
+    await expect(contents.list()).resolves.toHaveLength(1);
+    await expect(contents.list({ stage: "published" })).resolves.toHaveLength(1);
+    await contents.update("content-1", { title: "Updated", stage: "published", plannedAt: null, publishedAt: "2026-08-02T12:00:00.000Z" }, "2026-08-02T00:00:00.000Z");
+    await expect(contents.findById("content-1")).resolves.toMatchObject({ title: "Updated" });
+    await contents.remove("content-1", "2026-08-03T00:00:00.000Z");
+    await expect(contents.list()).resolves.toHaveLength(0);
     await miniflare.dispose();
   });
 

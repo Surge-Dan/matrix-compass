@@ -1,0 +1,15 @@
+{
+  "$schema": "./node_modules/@stryker-mutator/core/schema/stryker-schema.json",
+  "testRunner": "vitest",
+  "plugins": ["@stryker-mutator/vitest-runner"],
+  "mutate": ["lib/domain/finance.ts"],
+  "testFiles": ["tests/vitest/domain-finance.test.ts"],
+  "vitest": { "configFile": "vitest.config.ts", "related": true },
+  "coverageAnalysis": "perTest",
+  "ignoreStatic": true,
+  "mutator": { "excludedMutations": ["StringLiteral", "Regex", "MethodExpression", "OptionalChaining"] },
+  "concurrency": 4,
+  "timeoutMS": 15000,
+  "reporters": ["clear-text"],
+  "thresholds": { "high": 80, "low": 70, "break": 80 }
+}

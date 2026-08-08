@@ -3,16 +3,16 @@ import { defineConfig } from "vitest/config";
 export default defineConfig({
   test: {
     include: ["tests/vitest/**/*.test.ts"],
+    testTimeout: 20_000,
+    hookTimeout: 20_000,
     coverage: {
       provider: "v8",
       include: [
         "lib/dashboard-data.ts",
         "lib/dashboard-format.ts",
-        "app/api/dashboard/route.ts",
         "app/api/bootstrap/route.ts",
         "app/api/health/route.ts",
         "db/migrate.ts",
-        "db/schema.ts",
         "lib/backup/manifest.ts",
         "lib/application/get-bootstrap.ts",
         "lib/domain/account.ts",

@@ -16,6 +16,20 @@
         "eslint-plugin-react",
         "minimatch"
       ]
+    },
+    {
+      "advisory": "GHSA-w3rx-r6r6-pgpr",
+      "severity": "high",
+      "expiresOn": "2026-09-30",
+      "scope": "Development-only vinext build dependency; the parser is not shipped as runtime application code and uploaded files are handled by the local importer.",
+      "packages": ["image-size", "vinext"]
+    },
+    {
+      "advisory": "GHSA-5p2g-fcmc-qvqq",
+      "severity": "high",
+      "expiresOn": "2026-09-30",
+      "scope": "Development-only vinext build dependency; tracked until vinext publishes a dependency upgrade.",
+      "packages": ["image-size", "vinext"]
     }
   ]
 }

@@ -1,108 +1,77 @@
-# vinext-starter
+# Matrix Compass
 
-A clean full-stack starter running on
-[vinext](https://github.com/cloudflare/vinext), with optional Cloudflare D1 and
-Drizzle support.
+本地优先的创作者经营实验室：账号、内容库、发布日程、收入明细、数据导入、复盘与实验分析都在一个可追溯的数据模型里完成。默认数据只保存在本机，不调用公众号、小红书、抖音或快手的后台账号，也不要求上传密钥。
 
-## Prerequisites
+## 能做什么
 
-- Node.js `>=22.13.0`
-- Linux with `flock`, `curl`, and GNU `timeout`
+- 账号资产：平台、账号定位、发布节奏、粉丝快照。
+- 内容与日程：内容题目、账号、计划时间、发布状态，支持日历视图。
+- 收入管理：收入/支出、分类、金额（分）、结算状态、预计结算日和复盘字段。
+- 文件导入：CSV、XLSX；旧版 XLS 会提示先另存为 XLSX 或 CSV；先预览字段错误，再提交；每次提交有批次，可回滚。
+- 复盘实验：亮点、问题、假设、下一步行动，以及可量化的实验登记。
+- 本地安全：自动迁移前备份、备份完整性校验、恢复默认 dry-run、桌面与局域网手机访问。
 
-## Sites Lifecycle
+## 安装为本地 Skill
 
-The Sites lifecycle CLI runs the locked dependency install before returning this checkout. Edit the source under `app/`, then checkpoint when a coherent milestone is ready to inspect or share. The remote Sites builder runs `npm run build` against the pushed commit. Do not repeat install or build as a normal pre-checkpoint step.
+Node.js 22.13+、Git、Windows PowerShell：
 
-This starter does not use `wrangler.jsonc`.
-
-`install:ci` is intentionally a single, non-retrying `npm ci`. It refuses a concurrent install for the same project, consumes a matching image-seeded npm cache with `--prefer-offline` while retaining registry fallback for a missing cache object, otherwise downloads and verifies the complete vinext tarball recorded in `package-lock.json`, limits npm to one socket, and terminates a stalled install. `build` applies a short timeout and then validates the Sites artifact. These helpers target Linux and use GNU `timeout`; they are not native macOS scripts.
-
-Scripts that need writable project-scoped home, npm, XDG, and temporary paths use `scripts/sites-env.sh`. The `dev` and `start` scripts honor the caller's runtime environment and keep Wrangler logs inside the checkout. The generated `.sites-runtime/` directory is disposable and ignored by Git.
-
-## Included Shape
-
-- edit site code under `app/`
-- `app/chatgpt-auth.ts` provides optional dispatch-owned ChatGPT sign-in helpers
-- `.openai/hosting.json` declares optional Sites D1 and R2 bindings
-- `vite.config.ts` simulates declared bindings for local development
-- `db/index.ts` reads the D1 binding from the Cloudflare Worker environment
-- `db/schema.ts` starts intentionally empty
-- `examples/d1/` contains an optional D1 example surface
-- `drizzle.config.ts` supports local migration generation when needed
-
-## Workspace Auth Headers
-
-OpenAI workspace sites can read the current user's email from
-`oai-authenticated-user-email`.
-
-SIWC-authenticated workspace sites may also receive
-`oai-authenticated-user-full-name` when the user's SIWC profile has a non-empty
-`name` claim. The full-name value is percent-encoded UTF-8 and is accompanied by
-`oai-authenticated-user-full-name-encoding: percent-encoded-utf-8`.
-
-Treat the full name as optional and fall back to email when it is absent:
-
-```tsx
-import { headers } from "next/headers";
-
-export default async function Home() {
-  const requestHeaders = await headers();
-  const email = requestHeaders.get("oai-authenticated-user-email");
-  const encodedFullName = requestHeaders.get("oai-authenticated-user-full-name");
-  const fullName =
-    encodedFullName &&
-    requestHeaders.get("oai-authenticated-user-full-name-encoding") ===
-      "percent-encoded-utf-8"
-      ? decodeURIComponent(encodedFullName)
-      : null;
-
-  const displayName = fullName ?? email;
-  // ...
-}
+```powershell
+git clone https://github.com/Surge-Dan/matrix-compass.git C:\Tools\matrix-compass
+cd C:\Tools\matrix-compass
+.\skill\matrix-compass\scripts\install.ps1 -TargetPath C:\Tools\matrix-compass -DataPath C:\Users\Public\MatrixCompassData
 ```
 
-## Optional Dispatch-Owned ChatGPT Sign-In
+如果目标目录已经是本仓库，直接安装依赖并初始化：
 
-Import the ready-to-use helpers from `app/chatgpt-auth.ts` when the site needs
-optional or required ChatGPT sign-in:
+```powershell
+npm ci
+$env:MATRIX_COMPASS_DATA_DIR = "C:\Users\Public\MatrixCompassData"
+npm run db:migrate
+```
 
-- Use `getChatGPTUser()` for optional signed-in UI.
-- Use `requireChatGPTUser(returnTo)` for server-rendered pages that should send
-  anonymous visitors through Sign in with ChatGPT.
-- Use `chatGPTSignInPath(returnTo)` and `chatGPTSignOutPath(returnTo)` for
-  browser links or actions.
-- Pass a same-origin relative `returnTo` path for the destination after sign-in
-  or sign-out. The helper validates and safely encodes it.
-- Mark protected pages with `export const dynamic = "force-dynamic"` because
-  they depend on per-request identity headers.
+## 使用
 
-Dispatch owns `/signin-with-chatgpt`, `/signout-with-chatgpt`, `/callback`, the
-OAuth cookies, and identity header injection. Do not implement app routes for
-those reserved paths. Routes that do not import and call the helper remain
-anonymous-compatible.
+桌面端：
 
-SIWC establishes identity only; it does not prove workspace membership. Use the
-Sites hosting platform's access policy controls for workspace-wide restrictions,
-or enforce explicit server-side membership or allowlist checks.
+```powershell
+.\skill\matrix-compass\scripts\start.ps1 -ProjectPath C:\Tools\matrix-compass -DataPath C:\Users\Public\MatrixCompassData
+```
 
-Use SIWC for account pages, user-specific dashboards, saved records, and write
-actions tied to the current ChatGPT user. Leave public content anonymous.
+手机与电脑在同一 Wi-Fi 时：
 
-## Diagnostic Commands
+```powershell
+.\skill\matrix-compass\scripts\start.ps1 -ProjectPath C:\Tools\matrix-compass -DataPath C:\Users\Public\MatrixCompassData -Lan
+```
 
-- `npm run install:ci`: perform the one bounded lockfile install
-- `npm run dev`: start the Vite/Vinext development server
-- `npm run build`: build and validate the deployable Sites artifact
-- `npm run start`: start the built Vinext application
-- `npm test`: build, validate, and verify the rendered development-preview metadata
-- `npm run validate:artifact`: recheck an existing artifact's manifest and ESM `default.fetch` export
-- `npm run db:generate`: generate Drizzle migrations after schema changes
+浏览器打开 `http://127.0.0.1:3000`；局域网模式打开终端显示的局域网地址。进入“数据导入与同步”即可粘贴 CSV 或上传 XLSX（旧版 XLS 请先另存为 XLSX/CSV），预览通过后再提交。
 
-Use build and validation commands for targeted diagnosis after a remote failure, not as part of the normal checkpoint path.
+## 数据格式
 
-The timeout defaults can be overridden for a controlled canary with `SITES_INSTALL_TIMEOUT`, `SITES_INSTALL_KILL_AFTER`, `SITES_BUILD_TIMEOUT`, and `SITES_BUILD_KILL_AFTER`. A timeout fails the command; the helpers never retry an unchanged install or build.
+内容导入至少需要：`platform,account,title,date`。
 
-## Learn More
+收入导入至少需要：`platform,account,direction,category,amount,occurred_at`；金额按元填写，系统以整数分保存。可选字段：`settlement_status,settled_amount,expected_settlement_at,currency,note`。
 
-- [vinext Documentation](https://github.com/cloudflare/vinext)
-- [Drizzle D1 Guide](https://orm.drizzle.team/docs/get-started/d1-new)
+## 备份与恢复
+
+```powershell
+npm run backup
+npm run restore:dry-run -- --backup "C:\Users\Public\MatrixCompassData\backups\<timestamp>"
+npm run db:check
+```
+
+备份是本地 SQL 快照和 manifest；恢复命令默认只做隔离演练，不覆盖当前数据。
+
+## QA
+
+```powershell
+npm run typecheck
+npm run lint
+npm run test:unit
+npm run test:coverage
+npm run test:gherkin
+npm run test:e2e
+npm run test:mutation
+npm run test:security
+```
+
+真实平台 API 连接不是默认路径：平台权限、审核、账号安全和政策变化会带来高风险。本版本把可落地的本地记录、导入、分析和收入管理做成完整闭环；未来可在不改变本地数据模型的前提下增加受控连接器。

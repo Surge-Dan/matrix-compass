@@ -62,6 +62,7 @@ describe("local operations CLI", () => {
             "--file",
             "db/migrations/0001_initial.sql",
             "--yes",
+            "--json",
           ],
           environment,
         );
@@ -80,7 +81,7 @@ describe("local operations CLI", () => {
         expect(migrationManifest.recordCounts).toEqual({ accounts: 0, contents: 0 });
         await expect(
           runNode(["--import", "tsx", "scripts/check-local.ts"], environment),
-        ).resolves.toMatchObject({ stdout: expect.stringContaining("schema v2") });
+        ).resolves.toMatchObject({ stdout: expect.stringContaining("schema v4") });
         await runNode(
           [
             "node_modules/wrangler/bin/wrangler.js",
@@ -94,6 +95,7 @@ describe("local operations CLI", () => {
             "wrangler.local.jsonc",
             "--command",
             "INSERT INTO accounts (id, platform, name, active, version, created_at, updated_at) VALUES ('cli-account', 'wechat', 'CLI account', 1, 1, '2026-07-30T00:00:00.000Z', '2026-07-30T00:00:00.000Z');",
+            "--json",
             "--yes",
           ],
           environment,

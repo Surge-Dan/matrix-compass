@@ -1,5 +1,4 @@
 import { spawn } from "node:child_process";
-import { randomUUID } from "node:crypto";
 import { homedir } from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -9,7 +8,6 @@ import {
   readFile,
   rename,
   rm,
-  unlink,
   writeFile,
 } from "node:fs/promises";
 import {
@@ -21,11 +19,8 @@ import {
   prepareDataDirectories,
   resolveDataDirectory,
 } from "../lib/runtime/data-dir";
-import {
-  buildD1WranglerArgs,
-  createRuntimeWranglerConfig,
-  LOCAL_D1_DATABASE_NAME,
-} from "../lib/runtime/local-d1";
+import { LOCAL_D1_DATABASE_NAME } from "../lib/runtime/local-d1";
+import { dumpLocalDatabase } from "../lib/runtime/local-sqlite";
 import { MATRIX_COMPASS_VERSION } from "../lib/runtime/version";
 
 const repositoryRoot = fileURLToPath(new URL("..", import.meta.url));
@@ -85,21 +80,10 @@ async function main() {
     `.${backupName}.in-progress-${process.pid}`,
   );
   const sqlPath = path.join(stagingDirectory, "snapshot.sql");
-  const runtimeWranglerConfig = path.join(
-    paths.root,
-    `.matrix-compass-wrangler-${process.pid}-${randomUUID()}.jsonc`,
-  );
   await mkdir(stagingDirectory, { recursive: false });
   let temporaryRoot: string | undefined;
   try {
-    await writeFile(
-      runtimeWranglerConfig,
-      `${JSON.stringify(createRuntimeWranglerConfig(), null, 2)}\n`,
-      { encoding: "utf8", flag: "wx" },
-    );
-    await runWrangler(
-      buildD1WranglerArgs("export", paths, runtimeWranglerConfig, sqlPath),
-    );
+    await writeFile(sqlPath, await dumpLocalDatabase(paths.d1State), "utf8");
     temporaryRoot = await mkdtemp(
       path.join(paths.imports, "backup-verify-"),
     );
@@ -121,6 +105,7 @@ async function main() {
       "--file",
       sqlPath,
       "--yes",
+      "--json",
     ]);
     const queryOutput = await runWrangler(
       [
@@ -175,7 +160,6 @@ async function main() {
     ).catch(() => undefined);
     throw error;
   } finally {
-    await unlink(runtimeWranglerConfig).catch(() => undefined);
     if (temporaryRoot) {
       const relative = path.relative(paths.imports, temporaryRoot);
       if (relative && !relative.startsWith("..") && !path.isAbsolute(relative)) {

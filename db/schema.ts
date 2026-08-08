@@ -37,6 +37,7 @@ export const accounts = sqliteTable(
     currentFollowers: integer("current_followers"),
     active: integer("active", { mode: "boolean" }).notNull().default(true),
     deletedAt: text("deleted_at"),
+    importBatchId: text("import_batch_id"),
     ...timestampsAndVersion,
   },
   (table) => [
@@ -78,6 +79,7 @@ export const contents = sqliteTable(
     source: text("source").notNull().default("manual"),
     legacyReviewNote: text("legacy_review_note"),
     deletedAt: text("deleted_at"),
+    importBatchId: text("import_batch_id"),
     ...timestampsAndVersion,
   },
   (table) => [
@@ -97,4 +99,95 @@ export const contents = sqliteTable(
     ),
     check("contents_version_positive", sql`${table.version} >= 1`),
   ],
+);
+
+export const financeEntries = sqliteTable(
+  "finance_entries",
+  {
+    id: text("id").primaryKey(),
+    direction: text("direction").notNull(),
+    accountId: text("account_id").notNull().references(() => accounts.id, { onDelete: "restrict", onUpdate: "cascade" }),
+    contentId: text("content_id").references(() => contents.id, { onDelete: "set null", onUpdate: "cascade" }),
+    category: text("category").notNull(),
+    amountMinor: integer("amount_minor").notNull(),
+    currency: text("currency").notNull().default("CNY"),
+    occurredAt: text("occurred_at").notNull(),
+    settlementStatus: text("settlement_status").notNull().default("pending"),
+    settledAmountMinor: integer("settled_amount_minor").notNull().default(0),
+    expectedSettlementAt: text("expected_settlement_at"),
+    settledAt: text("settled_at"),
+    counterparty: text("counterparty"),
+    reviewHighlight: text("review_highlight"),
+    reviewProblem: text("review_problem"),
+    optimizationDirection: text("optimization_direction"),
+    note: text("note"),
+    source: text("source").notNull().default("manual"),
+    deletedAt: text("deleted_at"),
+    importBatchId: text("import_batch_id"),
+    ...timestampsAndVersion,
+  },
+  (table) => [index("finance_occurred_idx").on(table.occurredAt, table.direction), index("finance_account_idx").on(table.accountId, table.occurredAt)],
+);
+
+export const reviews = sqliteTable(
+  "reviews",
+  {
+    id: text("id").primaryKey(),
+    contentId: text("content_id").references(() => contents.id, { onDelete: "set null" }),
+    accountId: text("account_id").references(() => accounts.id, { onDelete: "set null" }),
+    title: text("title").notNull(),
+    highlight: text("highlight"),
+    problem: text("problem"),
+    hypothesis: text("hypothesis"),
+    nextAction: text("next_action"),
+    evidence: text("evidence"),
+    status: text("status").notNull().default("open"),
+    reviewedAt: text("reviewed_at"),
+    source: text("source").notNull().default("manual"),
+    createdAt: text("created_at").notNull(),
+    updatedAt: text("updated_at").notNull(),
+  },
+  (table) => [index("reviews_status_idx").on(table.status, table.updatedAt)],
+);
+
+export const experiments = sqliteTable(
+  "experiments",
+  {
+    id: text("id").primaryKey(),
+    name: text("name").notNull(),
+    goal: text("goal").notNull(),
+    hypothesis: text("hypothesis").notNull(),
+    variable: text("variable").notNull(),
+    control: text("control"),
+    primaryMetric: text("primary_metric").notNull(),
+    guardrailMetric: text("guardrail_metric"),
+    startsAt: text("starts_at"),
+    endsAt: text("ends_at"),
+    status: text("status").notNull().default("draft"),
+    result: text("result"),
+    conclusion: text("conclusion"),
+    createdAt: text("created_at").notNull(),
+    updatedAt: text("updated_at").notNull(),
+  },
+  (table) => [index("experiments_status_idx").on(table.status, table.updatedAt)],
+);
+
+export const importBatches = sqliteTable(
+  "import_batches",
+  {
+    id: text("id").primaryKey(),
+    source: text("source").notNull(),
+    target: text("target").notNull(),
+    fileName: text("file_name"),
+    status: text("status").notNull().default("preview"),
+    totalRows: integer("total_rows").notNull().default(0),
+    successRows: integer("success_rows").notNull().default(0),
+    duplicateRows: integer("duplicate_rows").notNull().default(0),
+    conflictRows: integer("conflict_rows").notNull().default(0),
+    failedRows: integer("failed_rows").notNull().default(0),
+    errorSummary: text("error_summary"),
+    createdAt: text("created_at").notNull(),
+    completedAt: text("completed_at"),
+  },
+  (table) => [index("import_batches_created_idx").on(table.createdAt)],
 );

@@ -107,6 +107,7 @@ async function main() {
       "--file",
       sqlPath,
       "--yes",
+      "--json",
     ]);
     const output = await runWrangler(
       [

@@ -7,6 +7,7 @@ import {
 import { MobileNav } from "../navigation/mobile-nav";
 import { DemoModeBanner } from "../onboarding/demo-mode-banner";
 import { EmptyState } from "../onboarding/empty-state";
+import { OperationsModule } from "../modules/operations-modules";
 
 function formatMoney(minor: number) {
   return new Intl.NumberFormat("zh-CN", {
@@ -31,6 +32,7 @@ function DemoOverview({ data }: { data: BootstrapData }) {
         <article><span>已结算</span><strong>{formatMoney(metrics?.settledMinor ?? 0)}</strong><small>90.9%</small></article>
         <article><span>待结算</span><strong>{formatMoney(metrics?.pendingMinor ?? 0)}</strong><small>需要跟进</small></article>
       </div>
+      {metrics ? <section className="operations-live-summary" aria-label="Local finance summary"><strong>Live finance</strong><span>Net {formatMoney(metrics.revenueMinor)}</span><span>Settled {formatMoney(metrics.settledMinor)}</span><span>Pending {formatMoney(metrics.pendingMinor)}</span></section> : null}
       <section className="operations-placeholder-panel">
         <div><strong>真实数据接入后，这里会显示经营信号</strong><span>趋势、待办、收入和内容表现都将来自可追溯记录。</span></div>
       </section>
@@ -59,6 +61,7 @@ function LocalOverview({ data }: { data: BootstrapData }) {
   );
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function PendingModule({ page }: { page: OperationsPage }) {
   const label = OPERATIONS_NAVIGATION.find((item) => item.id === page)?.label ?? "经营模块";
   return (
@@ -99,7 +102,7 @@ export function OperationsView({
         {notice ? <div className="operations-notice" role="status">{notice}</div> : null}
         <main id="operations-content" className="operations-content">
           {activePage !== "overview" ? (
-            <PendingModule page={activePage} />
+            <OperationsModule page={activePage} />
           ) : data.needsOnboarding ? (
             <EmptyState actions={data.actions} onAction={onAction} />
           ) : data.mode === "demo" ? (
